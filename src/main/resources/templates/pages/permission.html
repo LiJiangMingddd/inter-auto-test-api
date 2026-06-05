@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     权限管理页面碎片
+     ============================================================ -->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="permission-page">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-shield-halved"></i> 权限列表</h3>
+            <div class="toolbar">
+                <div class="search-bar">
+                    <input class="layui-input" id="permKeyword" placeholder="搜索权限名称/编码..." style="width:200px;">
+                    <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadPermission(1)">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <button class="layui-btn layui-btn-sm" onclick="showPermissionForm()">
+                    <i class="fas fa-plus"></i> 新增权限
+                </button>
+            </div>
+        </div>
+        <table class="layui-table" lay-skin="line">
+            <thead>
+            <tr>
+                <th style="width:60px;">ID</th>
+                <th>权限名称</th>
+                <th>权限编码</th>
+                <th>关联URL</th>
+                <th style="width:60px;">排序</th>
+                <th style="width:120px;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="permTbody"></tbody>
+        </table>
+        <div id="permPage" style="text-align:center;padding:10px 0;"></div>
+    </div>
+
+    <script>
+    // ============================================================
+    //  权限 CRUD
+    // ============================================================
+
+    /** 加载权限列表 */
+    function loadPermission(page) {
+        var keyword = document.getElementById('permKeyword') ? document.getElementById('permKeyword').value : '';
+        ajax({
+            url: '/api/permission/page?pageNum=' + page + '&pageSize=10&keyword=' + encodeURIComponent(keyword),
+            success: function(res) {
+                if (res.code !== 200) { layer.msg(res.msg); return; }
+                var data = res.data, html = '';
+                (data.records || []).forEach(function(item, i) {
+                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
+                        '<td>' + item.id + '</td>' +
+                        '<td><strong>' + escHtml(item.permName) + '</strong>' + (item.parentId && item.parentId !== 0 ? '<br><small style="color:#999;">父ID: ' + item.parentId + '</small>' : '') + '</td>' +
+                        '<td><code style="background:#f0f2ff;padding:2px 8px;border-radius:4px;color:#667eea;">' + escHtml(item.permCode) + '</code></td>' +
+                        '<td><small style="color:#999;">' + escHtml(item.permUrl||'-') + '</small></td>' +
+                        '<td>' + (item.sortOrder||0) + '</td>' +
+                        '<td>' +
+                        '<button class="action-btn edit" onclick="editPermission(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
+                        '<button class="action-btn danger" onclick="deletePermission(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
+                        '</td></tr>';
+                });
+                if (!html) {
+                    html = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-shield-halved"></i><p>暂无权限数据</p></div></td></tr>';
+                }
+                document.getElementById('permTbody').innerHTML = html;
+                renderPager('permPage', data, loadPermission);
+            }
+        });
+    }
+
+    /** 打开权限表单弹窗 */
+    function showPermissionForm(data) {
+        var isEdit = !!data;
+        var title = isEdit ? '编辑权限' : '新增权限';
+        var d = data || {};
+
+        var html =
+            '<div style="padding:24px 28px;">' +
+            '<div class="layui-form">' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-tag"></i> 名称</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_name" class="layui-input" value="' + escHtml(d.permName||'') + '" placeholder="如：接口管理"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-code"></i> 编码</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_code" class="layui-input" value="' + escHtml(d.permCode||'') + '" placeholder="如：api:manage"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-link"></i> URL</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_url" class="layui-input" value="' + escHtml(d.permUrl||'') + '" placeholder="可选"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sitemap"></i> 父ID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_parent" class="layui-input" value="' + (d.parentId||0) + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sort-numeric-up"></i> 排序</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_sort" class="layui-input" value="' + (d.sortOrder||0) + '"></div></div>' +
+            '</div></div>';
+
+        openLayer(title, html, ['500px', '320px'], function(index) {
+            var obj = {
+                permName: document.getElementById('f_perm_name').value,
+                permCode: document.getElementById('f_perm_code').value,
+                permUrl: document.getElementById('f_perm_url').value,
+                parentId: parseInt(document.getElementById('f_perm_parent').value) || 0,
+                sortOrder: parseInt(document.getElementById('f_perm_sort').value) || 0
+            };
+            if (isEdit) obj.id = d.id;
+            ajax({
+                url: '/api/permission', method: isEdit ? 'PUT' : 'POST',
+                contentType: 'application/json', data: JSON.stringify(obj),
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadPermission(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+
+    function editPermission(id) {
+        ajax({ url: '/api/permission/' + id, success: function(res) { if (res.code === 200) showPermissionForm(res.data); } });
+    }
+
+    function deletePermission(id) {
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;"></i> 确定删除该权限？', { icon: 3, title: '确认' }, function(index) {
+            ajax({ url: '/api/permission/' + id, method: 'DELETE',
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadPermission(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+</script>
+</div>

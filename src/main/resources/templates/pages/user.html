@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     用户管理页面碎片
+     ============================================================ -->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="user-page">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-users"></i> 用户列表</h3>
+            <div class="toolbar">
+                <div class="search-bar">
+                    <input class="layui-input" id="userKeyword" placeholder="搜索用户名/昵称..." style="width:200px;">
+                    <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadUser(1)">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <button class="layui-btn layui-btn-sm" onclick="showUserForm()">
+                    <i class="fas fa-user-plus"></i> 新增用户
+                </button>
+            </div>
+        </div>
+        <table class="layui-table" lay-skin="line">
+            <thead>
+            <tr>
+                <th style="width:60px;">ID</th>
+                <th>用户名</th>
+                <th>昵称</th>
+                <th>邮箱</th>
+                <th>手机</th>
+                <th>AppID</th>
+                <th style="width:80px;">状态</th>
+                <th style="width:210px;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="userTbody"></tbody>
+        </table>
+        <div id="userPage" style="text-align:center;padding:10px 0;"></div>
+    </div>
+
+    <script>
+    // ============================================================
+    //  用户 CRUD
+    // ============================================================
+
+    /** 加载用户列表 */
+    function loadUser(page) {
+        var keyword = document.getElementById('userKeyword') ? document.getElementById('userKeyword').value : '';
+        ajax({
+            url: '/api/user/page?pageNum=' + page + '&pageSize=10&keyword=' + encodeURIComponent(keyword),
+            success: function(res) {
+                if (res.code !== 200) { layer.msg(res.msg); return; }
+                var data = res.data, html = '';
+                (data.records || []).forEach(function(item, i) {
+                    var statusHtml = item.status === 1
+                        ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
+                        : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
+                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
+                        '<td>' + item.id + '</td>' +
+                        '<td><strong>' + escHtml(item.username) + '</strong></td>' +
+                        '<td>' + escHtml(item.nickname||'-') + '</td>' +
+                        '<td>' + escHtml(item.email||'-') + '</td>' +
+                        '<td>' + escHtml(item.phone||'-') + '</td>' +
+                        '<td><code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;">' + escHtml(item.appId||'-') + '</code></td>' +
+                        '<td>' + statusHtml + '</td>' +
+                        '<td>' +
+                        '<button class="action-btn edit" onclick="editUser(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
+                        '<button class="action-btn role" onclick="assignUserRole(' + item.id + ',\'' + escHtml(item.username) + '\')"><i class="fas fa-user-tag"></i> 角色</button> ' +
+                        '<button class="action-btn danger" onclick="deleteUser(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
+                        '</td></tr>';
+                });
+                if (!html) {
+                    html = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-users-slash"></i><p>暂无用户数据</p></div></td></tr>';
+                }
+                document.getElementById('userTbody').innerHTML = html;
+                renderPager('userPage', data, loadUser);
+            }
+        });
+    }
+
+    /** 打开新增/编辑用户弹窗 */
+    function showUserForm(data) {
+        var isEdit = !!data;
+        var title = isEdit ? '编辑用户' : '新增用户';
+        var d = data || {};
+
+        var pwdPlaceholder = isEdit ? '留空则不修改密码' : '请输入密码';
+        var keyPlaceholder = isEdit ? '留空则不修改AppKey' : '请输入AppKey';
+
+        var html =
+            '<div style="padding:24px 28px;">' +
+            '<div class="layui-form">' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-user"></i> 用户名</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_username" class="layui-input" value="' + escHtml(d.username||'') + '" ' + (isEdit?'readonly':'') + '></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-lock"></i> 密码</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_password" type="password" class="layui-input" placeholder="' + pwdPlaceholder + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-smile"></i> 昵称</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_nickname" class="layui-input" value="' + escHtml(d.nickname||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-envelope"></i> 邮箱</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_email" class="layui-input" value="' + escHtml(d.email||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-phone"></i> 手机</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_phone" class="layui-input" value="' + escHtml(d.phone||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-key"></i> AppID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_appId" class="layui-input" value="' + escHtml(d.appId||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-lock"></i> AppKey</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_appKey" type="password" class="layui-input" placeholder="' + keyPlaceholder + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_user_status" class="layui-input"><option value="1"' + (d.status!==0?'selected':'') + '>启用</option><option value="0"' + (d.status===0?'selected':'') + '>禁用</option></select></div></div>' +
+            '</div></div>';
+
+        openLayer(title, html, ['520px', '480px'], function(index) {
+            var obj = {
+                username: document.getElementById('f_user_username').value,
+                nickname: document.getElementById('f_user_nickname').value,
+                email: document.getElementById('f_user_email').value,
+                phone: document.getElementById('f_user_phone').value,
+                appId: document.getElementById('f_user_appId').value,
+                status: parseInt(document.getElementById('f_user_status').value)
+            };
+            var pwd = document.getElementById('f_user_password').value;
+            var appKey = document.getElementById('f_user_appKey').value;
+            if (pwd) obj.password = pwd;
+            if (appKey) obj.appKey = appKey;
+            if (isEdit) obj.id = d.id;
+            ajax({
+                url: '/api/user', method: isEdit ? 'PUT' : 'POST',
+                contentType: 'application/json', data: JSON.stringify(obj),
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadUser(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+
+    function editUser(id) {
+        ajax({ url: '/api/user/' + id, success: function(res) { if (res.code === 200) showUserForm(res.data); } });
+    }
+
+    function deleteUser(id) {
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;"></i> 确定删除该用户？', { icon: 3, title: '确认' }, function(index) {
+            ajax({ url: '/api/user/' + id, method: 'DELETE',
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadUser(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+
+    /** 分配用户角色 */
+    function assignUserRole(userId, username) {
+        var roleCheckboxes = '';
+        ajax({
+            url: '/api/role/all',
+            async: false,
+            success: function(res) {
+                if (res.code !== 200) { layer.msg('获取角色列表失败'); return; }
+                var roles = res.data;
+                ajax({
+                    url: '/api/assign/user/' + userId + '/roles',
+                    async: false,
+                    success: function(res2) {
+                        var userRoleIds = (res2.code === 200 && res2.data) ? res2.data : [];
+                        roles.forEach(function(r) {
+                            var checked = userRoleIds.indexOf(r.id) > -1 ? 'checked' : '';
+                            roleCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid #f5f5f5;"><input type="checkbox" name="roleChk" value="' + r.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(r.roleName) + ' <small>(' + escHtml(r.roleCode) + ')</small>"></div>';
+                        });
+                        if (!roles.length) {
+                            roleCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无角色，请先创建角色</div>';
+                        }
+                    }
+                });
+            }
+        });
+
+        var html = '<div style="padding:20px 28px;">' +
+            '<p style="margin-bottom:16px;color:#666;"><i class="fas fa-user-tag" style="color:#667eea;"></i> 为用户 <strong>' + escHtml(username) + '</strong> 分配角色</p>' +
+            roleCheckboxes + '</div>';
+
+        openLayer('分配角色', html, ['400px', '360px'], function(index) {
+            var checks = document.querySelectorAll('input[name="roleChk"]:checked');
+            var roleIds = [];
+            checks.forEach(function(c) { roleIds.push(parseInt(c.value)); });
+            ajax({
+                url: '/api/assign/user/' + userId + '/roles',
+                method: 'POST', contentType: 'application/json',
+                data: JSON.stringify({roleIds: roleIds}),
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('分配成功！', {icon:1}); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+</script>
+</div>

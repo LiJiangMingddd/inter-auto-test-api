@@ -1,0 +1,61 @@
+package com.lm.interautotestapi.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lm.interautotestapi.common.Result;
+import com.lm.interautotestapi.entity.ApiInterface;
+import com.lm.interautotestapi.service.ApiInterfaceService;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+
+@RestController
+@RequestMapping("/api/interface")
+public class ApiInterfaceController {
+
+    @Resource
+    private ApiInterfaceService apiInterfaceService;
+
+    @GetMapping("/page")
+    @SaCheckPermission("api:manage")
+    public Result<Page<ApiInterface>> page(@RequestParam(defaultValue = "1") int pageNum,
+                                           @RequestParam(defaultValue = "10") int pageSize,
+                                           @RequestParam(required = false) String keyword) {
+        Page<ApiInterface> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<ApiInterface> wrapper = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like(ApiInterface::getApiName, keyword)
+                    .or().like(ApiInterface::getApiInfo, keyword);
+        }
+        wrapper.orderByDesc(ApiInterface::getId);
+        return Result.ok(apiInterfaceService.page(page, wrapper));
+    }
+
+    @GetMapping("/{id}")
+    @SaCheckPermission("api:manage")
+    public Result<ApiInterface> getById(@PathVariable Long id) {
+        return Result.ok(apiInterfaceService.getById(id));
+    }
+
+    @PostMapping
+    @SaCheckPermission("api:manage")
+    public Result<Void> save(@RequestBody ApiInterface apiInterface) {
+        apiInterfaceService.save(apiInterface);
+        return Result.ok();
+    }
+
+    @PutMapping
+    @SaCheckPermission("api:manage")
+    public Result<Void> update(@RequestBody ApiInterface apiInterface) {
+        apiInterfaceService.updateById(apiInterface);
+        return Result.ok();
+    }
+
+    @DeleteMapping("/{id}")
+    @SaCheckPermission("api:manage")
+    public Result<Void> delete(@PathVariable Long id) {
+        apiInterfaceService.removeById(id);
+        return Result.ok();
+    }
+}

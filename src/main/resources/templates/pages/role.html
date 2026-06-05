@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     角色管理页面碎片
+     ============================================================ -->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="role-page">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-user-tag"></i> 角色列表</h3>
+            <div class="toolbar">
+                <div class="search-bar">
+                    <input class="layui-input" id="roleKeyword" placeholder="搜索角色名称/编码..." style="width:200px;">
+                    <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadRole(1)">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <button class="layui-btn layui-btn-sm" onclick="showRoleForm()">
+                    <i class="fas fa-plus"></i> 新增角色
+                </button>
+            </div>
+        </div>
+        <table class="layui-table" lay-skin="line">
+            <thead>
+            <tr>
+                <th style="width:60px;">ID</th>
+                <th>角色名称</th>
+                <th>角色编码</th>
+                <th>描述</th>
+                <th style="width:190px;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="roleTbody"></tbody>
+        </table>
+        <div id="rolePage" style="text-align:center;padding:10px 0;"></div>
+    </div>
+
+    <script>
+    // ============================================================
+    //  角色 CRUD
+    // ============================================================
+
+    /** 加载角色列表 */
+    function loadRole(page) {
+        var keyword = document.getElementById('roleKeyword') ? document.getElementById('roleKeyword').value : '';
+        ajax({
+            url: '/api/role/page?pageNum=' + page + '&pageSize=10&keyword=' + encodeURIComponent(keyword),
+            success: function(res) {
+                if (res.code !== 200) { layer.msg(res.msg); return; }
+                var data = res.data, html = '';
+                (data.records || []).forEach(function(item, i) {
+                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
+                        '<td>' + item.id + '</td>' +
+                        '<td><strong>' + escHtml(item.roleName) + '</strong></td>' +
+                        '<td><code style="background:#f5f5f5;padding:2px 8px;border-radius:4px;color:#667eea;">' + escHtml(item.roleCode) + '</code></td>' +
+                        '<td><small style="color:#999;">' + escHtml(item.roleDesc||'-') + '</small></td>' +
+                        '<td>' +
+                        '<button class="action-btn edit" onclick="editRole(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
+                        '<button class="action-btn perm" onclick="assignRolePerm(' + item.id + ',\'' + escHtml(item.roleName) + '\')"><i class="fas fa-shield-halved"></i> 权限</button> ' +
+                        '<button class="action-btn danger" onclick="deleteRole(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
+                        '</td></tr>';
+                });
+                if (!html) {
+                    html = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tag"></i><p>暂无角色数据</p></div></td></tr>';
+                }
+                document.getElementById('roleTbody').innerHTML = html;
+                renderPager('rolePage', data, loadRole);
+            }
+        });
+    }
+
+    /** 打开角色表单弹窗 */
+    function showRoleForm(data) {
+        var isEdit = !!data;
+        var title = isEdit ? '编辑角色' : '新增角色';
+        var d = data || {};
+
+        var html =
+            '<div style="padding:24px 28px;">' +
+            '<div class="layui-form">' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-tag"></i> 名称</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_role_name" class="layui-input" value="' + escHtml(d.roleName||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-code"></i> 编码</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_role_code" class="layui-input" value="' + escHtml(d.roleCode||'') + '" ' + (isEdit?'readonly':'') + ' placeholder="如：admin, user, guest"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-align-left"></i> 描述</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_role_desc" class="layui-textarea" style="min-height:80px;">' + escHtml(d.roleDesc||'') + '</textarea></div></div>' +
+            '</div></div>';
+
+        openLayer(title, html, ['500px', '280px'], function(index) {
+            var obj = {
+                roleName: document.getElementById('f_role_name').value,
+                roleCode: document.getElementById('f_role_code').value,
+                roleDesc: document.getElementById('f_role_desc').value
+            };
+            if (isEdit) obj.id = d.id;
+            ajax({
+                url: '/api/role', method: isEdit ? 'PUT' : 'POST',
+                contentType: 'application/json', data: JSON.stringify(obj),
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadRole(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+
+    function editRole(id) {
+        ajax({ url: '/api/role/' + id, success: function(res) { if (res.code === 200) showRoleForm(res.data); } });
+    }
+
+    function deleteRole(id) {
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;"></i> 确定删除该角色？<br><small style="color:#999;">关联的用户角色关系也会被清除</small>', { icon: 3, title: '确认' }, function(index) {
+            ajax({ url: '/api/role/' + id, method: 'DELETE',
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadRole(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+
+    /** 分配角色权限 */
+    function assignRolePerm(roleId, roleName) {
+        var permCheckboxes = '';
+        ajax({
+            url: '/api/permission/all',
+            async: false,
+            success: function(res) {
+                if (res.code !== 200) { layer.msg('获取权限列表失败'); return; }
+                var perms = res.data;
+                ajax({
+                    url: '/api/assign/role/' + roleId + '/permissions',
+                    async: false,
+                    success: function(res2) {
+                        var rolePermIds = (res2.code === 200 && res2.data) ? res2.data : [];
+                        perms.forEach(function(p) {
+                            var checked = rolePermIds.indexOf(p.id) > -1 ? 'checked' : '';
+                            permCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid #f5f5f5;"><input type="checkbox" name="permChk" value="' + p.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(p.permName) + ' <small>(' + escHtml(p.permCode) + ')</small>"></div>';
+                        });
+                        if (!perms.length) {
+                            permCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无权限，请先创建权限</div>';
+                        }
+                    }
+                });
+            }
+        });
+
+        var html = '<div style="padding:20px 28px;">' +
+            '<p style="margin-bottom:16px;color:#666;"><i class="fas fa-shield-halved" style="color:#667eea;"></i> 为角色 <strong>' + escHtml(roleName) + '</strong> 分配权限</p>' +
+            permCheckboxes + '</div>';
+
+        openLayer('分配权限', html, ['420px', '360px'], function(index) {
+            var checks = document.querySelectorAll('input[name="permChk"]:checked');
+            var permIds = [];
+            checks.forEach(function(c) { permIds.push(parseInt(c.value)); });
+            ajax({
+                url: '/api/assign/role/' + roleId + '/permissions',
+                method: 'POST', contentType: 'application/json',
+                data: JSON.stringify({permIds: permIds}),
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('分配成功！', {icon:1}); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+</script>
+</div>

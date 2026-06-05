@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     主布局页面
+     使用 Thymeleaf 加载侧边栏 + 各页面碎片
+     ============================================================ -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接口自动化中台</title>
+    <!-- 样式库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css" rel="stylesheet">
+
+    <style>
+        /* ================================================================
+           全局样式
+           ================================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            background: #f0f2f5; color: #333; overflow: hidden;
+        }
+
+        /* ===== 主布局容器 ===== */
+        .app-container { display: flex; height: 100vh; }
+
+        /* ================================================================
+           侧边栏
+           ================================================================ */
+        .sidebar {
+            width: 250px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            display: flex; flex-direction: column; flex-shrink: 0;
+            transition: width 0.3s ease; z-index: 100;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+        }
+        .sidebar-logo {
+            padding: 22px 20px; text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .sidebar-logo .logo-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff; font-size: 20px; margin-bottom: 8px;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+        .sidebar-logo h2 { color: #fff; font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+        .sidebar-logo p { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 2px; }
+
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .nav-section { margin-bottom: 6px; }
+        .nav-section-title {
+            padding: 8px 22px 4px; font-size: 11px; color: rgba(255,255,255,0.25);
+            text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+        }
+        .nav-item {
+            display: flex; align-items: center; padding: 12px 22px;
+            color: rgba(255,255,255,0.55); cursor: pointer;
+            transition: all 0.25s ease; font-size: 14px;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+        .nav-item.active {
+            background: rgba(102,126,234,0.15); color: #667eea;
+            border-left-color: #667eea;
+        }
+        .nav-item i { width: 22px; font-size: 16px; margin-right: 10px; text-align: center; }
+
+        /* ================================================================
+           右侧主区域
+           ================================================================ */
+        .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ===== 顶部栏 ===== */
+        .topbar {
+            height: 56px; background: #fff; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .topbar-left .page-title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
+        .topbar-left .page-title i { margin-right: 8px; color: #667eea; }
+        .topbar-right { display: flex; align-items: center; gap: 18px; }
+        .topbar-right .user-info { display: flex; align-items: center; gap: 8px; color: #555; font-size: 14px; }
+        .topbar-right .user-info .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 14px; font-weight: 600;
+        }
+        .logout-btn {
+            padding: 6px 16px; border: 1px solid #e8e8e8; border-radius: 8px;
+            background: #fff; color: #999; cursor: pointer; font-size: 13px;
+            transition: all 0.25s;
+        }
+        .logout-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+
+        /* ===== 内容区 ===== */
+        .content-area {
+            flex: 1; padding: 22px; overflow-y: auto; background: #f0f2f5;
+        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+
+        /* ===== 页面面板 ===== */
+        .page-panel { display: none; animation: fadeIn 0.35s ease; }
+        .page-panel.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== 卡片 ===== */
+        .card {
+            background: #fff; border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            padding: 22px 24px; margin-bottom: 20px;
+            transition: box-shadow 0.3s;
+        }
+        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 18px; padding-bottom: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .card-header h3 { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .card-header h3 i { color: #667eea; margin-right: 8px; }
+
+        /* ===== 工具栏 ===== */
+        .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .toolbar .layui-btn { border-radius: 8px; }
+        .search-bar { display: flex; align-items: center; gap: 10px; }
+        .search-bar .layui-input {
+            border-radius: 8px; height: 36px; border: 1px solid #e8e8e8;
+            transition: border-color 0.3s;
+        }
+        .search-bar .layui-input:focus { border-color: #667eea; }
+
+        /* ===== 表格 ===== */
+        .layui-table { border-radius: 10px; overflow: hidden; }
+        .layui-table th {
+            background: #fafafa !important; color: #555; font-weight: 600;
+            border-color: #f0f0f0 !important;
+        }
+        .layui-table td, .layui-table th { padding: 10px 14px; }
+        .layui-table tr:hover td { background: #f8f9ff !important; }
+
+        /* ===== 状态标签 ===== */
+        .tag { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .tag-success { background: #e8f5e9; color: #2e7d32; }
+        .tag-danger { background: #fbe9e7; color: #c62828; }
+        .tag-primary { background: #e3f2fd; color: #1565c0; }
+        .tag-warning { background: #fff3e0; color: #e65100; }
+
+        /* ===== URL 单元格截断 ===== */
+        .url-cell {
+            max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-size: 12px; color: #666; cursor: default;
+            position: relative;
+        }
+        .url-cell .url-text {
+            display: inline-block; max-width: 160px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            vertical-align: middle;
+        }
+        .url-cell .url-copy-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border: none; border-radius: 4px;
+            background: transparent; color: #bbb; cursor: pointer;
+            font-size: 11px; transition: all 0.2s; vertical-align: middle; margin-left: 4px;
+            opacity: 0;
+        }
+        .url-cell:hover .url-copy-btn { opacity: 1; }
+        .url-cell .url-copy-btn:hover { background: #e8f5e9; color: #2e7d32; }
+        .url-cell .url-copy-btn.copied { background: #e8f5e9; color: #2e7d32; }
+
+        /* ===== 表格行进入动画 ===== */
+        .table-row-enter { animation: rowSlideIn 0.35s ease both; }
+        @keyframes rowSlideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ===== 环境标签优化 ===== */
+        .env-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .env-badge.dev { background: #e3f2fd; color: #1565c0; }
+        .env-badge.uat { background: #fff3e0; color: #e65100; }
+        .env-badge.pro { background: #fbe9e7; color: #c62828; }
+
+        /* ===== 卡片/按钮动画增强 ===== */
+        .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .layui-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            position: relative; overflow: hidden;
+        }
+        .layui-btn:active { transform: scale(0.95); }
+
+        /* 按钮涟漪效果 */
+        .layui-btn::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0; border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transition: width 0.4s, height 0.4s, opacity 0.4s;
+            transform: translate(-50%, -50%); opacity: 0;
+        }
+        .layui-btn:active::after {
+            width: 200px; height: 200px; opacity: 1;
+        }
+
+        /* 空状态动画 */
+        .empty-state i { animation: floatIcon 2s ease-in-out infinite; }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* ===== 分页美化 ===== */
+        .page-panel .layui-laypage { margin: 18px 0 0 !important; }
+        .page-panel .layui-laypage a, .page-panel .layui-laypage span {
+            border-radius: 6px !important; margin: 0 2px !important;
+            transition: all 0.2s;
+        }
+        .page-panel .layui-laypage .layui-laypage-curr .layui-laypage-em {
+            border-radius: 6px !important;
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        }
+
+        /* ===== 弹窗美化 ===== */
+        .layui-layer-title {
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            color: #fff !important; border-radius: 12px 12px 0 0 !important;
+        }
+        .layui-layer { border-radius: 12px !important; overflow: hidden; }
+
+        /* ===== 滚动条美化 ===== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+
+        /* ===== 操作按钮 ===== */
+        .action-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 12px; border: none; border-radius: 6px;
+            font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .action-btn.edit { background: #e3f2fd; color: #1976d2; }
+        .action-btn.edit:hover { background: #1976d2; color: #fff; }
+        .action-btn.role { background: #fff3e0; color: #e65100; }
+        .action-btn.role:hover { background: #e65100; color: #fff; }
+        .action-btn.danger { background: #fbe9e7; color: #c62828; }
+        .action-btn.danger:hover { background: #c62828; color: #fff; }
+        .action-btn.perm { background: #e8f5e9; color: #2e7d32; }
+        .action-btn.perm:hover { background: #2e7d32; color: #fff; }
+
+        /* ===== 空状态 ===== */
+        .empty-state { text-align: center; padding: 50px 0; color: #bbb; }
+        .empty-state i { font-size: 48px; margin-bottom: 12px; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar-logo h2, .sidebar-logo p, .nav-item span, .nav-section-title { display: none; }
+            .nav-item { justify-content: center; padding: 14px; }
+            .nav-item i { margin: 0; }
+            .topbar { padding: 0 16px; }
+            .content-area { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- ===== 侧边栏 ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+            <h2><i class="fas fa-cog" style="font-size:13px;color:#667eea;"></i> 接口中台</h2>
+            <p>Auto Test Platform</p>
+        </div>
+        <nav class="sidebar-nav">
+            <!-- 业务管理 -->
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 业务管理
+                </div>
+                <div class="nav-item active" data-tab="interface" onclick="switchTab('interface')">
+                    <i class="fas fa-plug"></i><span>接口管理</span>
+                </div>
+                <div class="nav-item" data-tab="testcase" onclick="switchTab('testcase')">
+                    <i class="fas fa-vial"></i><span>用例管理</span>
+                </div>
+            </div>
+            <!-- 系统管理 -->
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 系统管理
+                </div>
+                <div class="nav-item" data-tab="user" onclick="switchTab('user')">
+                    <i class="fas fa-users"></i><span>用户管理</span>
+                </div>
+                <div class="nav-item" data-tab="role" onclick="switchTab('role')">
+                    <i class="fas fa-user-tag"></i><span>角色管理</span>
+                </div>
+                <div class="nav-item" data-tab="permission" onclick="switchTab('permission')">
+                    <i class="fas fa-shield-halved"></i><span>权限管理</span>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ===== 主区域 ===== -->
+    <div class="main-area">
+        <!-- 顶部栏 -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <span class="page-title" id="pageTitle"><i class="fas fa-plug"></i> 接口管理</span>
+            </div>
+            <div class="topbar-right">
+                <div class="user-info">
+                    <div class="avatar" id="userAvatar">A</div>
+                    <span id="userName">加载中...</span>
+                </div>
+                <button class="logout-btn" onclick="doLogout()">
+                    <i class="fas fa-right-from-bracket"></i> 退出
+                </button>
+            </div>
+        </header>
+
+        <!-- 内容区 - 使用 th:insert 加载各页面碎片 -->
+        <div class="content-area">
+
+            <!-- 接口管理 -->
+            <div class="page-panel active" id="panel-interface" th:insert="pages/interface :: interface-page"></div>
+
+            <!-- 用例管理 -->
+            <div class="page-panel" id="panel-testcase" th:insert="pages/testcase :: testcase-page"></div>
+
+            <!-- 用户管理 -->
+            <div class="page-panel" id="panel-user" th:insert="pages/user :: user-page"></div>
+
+            <!-- 角色管理 -->
+            <div class="page-panel" id="panel-role" th:insert="pages/role :: role-page"></div>
+
+            <!-- 权限管理 -->
+            <div class="page-panel" id="panel-permission" th:insert="pages/permission :: permission-page"></div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     脚本
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/layui.js"></script>
+<script>
+    // ============================================================
+    //  全局变量
+    // ============================================================
+    var token = localStorage.getItem('token');
+    var currentTab = 'interface';
+    var layer, $;
+
+    // 未登录时跳转到登录页
+    if (!token) { window.location.href = '/login'; }
+
+    // ============================================================
+    //  AJAX 封装（自动携带 token 请求头，统一错误处理）
+    // ============================================================
+    function ajax(options) {
+        if (!options.headers) options.headers = {};
+        options.headers['Authorization'] = token;
+
+        // 保存原始 success 回调
+        var originalSuccess = options.success;
+
+        // 注入统一的 error 处理
+        options.error = function(xhr) {
+            var msg = '请求失败';
+            try {
+                var resp = JSON.parse(xhr.responseText);
+                msg = resp.msg || ('HTTP ' + xhr.status);
+            } catch(e) {
+                msg = '网络异常 (' + xhr.status + ')';
+            }
+            // 如果 layer 已初始化，用 layer.msg 显示
+            if (typeof layer !== 'undefined' && layer.msg) {
+                layer.msg('<i class=\"fas fa-exclamation-circle\"></i> ' + msg, {icon: 2, time: 3000});
+            } else {
+                alert(msg);
+            }
+        };
+
+        // 包装 success：统一检查 code
+        options.success = function(res) {
+            if (res && res.code !== 200) {
+                if (typeof layer !== 'undefined' && layer.msg) {
+                    layer.msg('<i class=\"fas fa-exclamation-circle\"></i> ' + (res.msg || '操作失败'), {icon: 2, time: 3000});
+                } else {
+                    alert(res.msg || '操作失败');
+                }
+                return;
+            }
+            if (originalSuccess) originalSuccess(res);
+        };
+
+        return $.ajax(options);
+    }
+
+    // ============================================================
+    //  页面切换
+    // ============================================================
+    function switchTab(tab) {
+        currentTab = tab;
+        // 更新侧边栏高亮
+        document.querySelectorAll('.nav-item').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.tab === tab);
+        });
+        // 切换面板显示
+        document.querySelectorAll('.page-panel').forEach(function(el) {
+            el.classList.toggle('active', el.id === 'panel-' + tab);
+        });
+        // 更新顶部标题
+        var titles = {
+            interface: '<i class="fas fa-plug"></i> 接口管理',
+            testcase: '<i class="fas fa-vial"></i> 用例管理',
+            user: '<i class="fas fa-users"></i> 用户管理',
+            role: '<i class="fas fa-user-tag"></i> 角色管理',
+            permission: '<i class="fas fa-shield-halved"></i> 权限管理'
+        };
+        document.getElementById('pageTitle').innerHTML = titles[tab] || tab;
+        // 触发对应页面数据加载
+        var loaders = { interface: loadInterface, testcase: loadTestcase, user: loadUser, role: loadRole, permission: loadPermission };
+        if (loaders[tab]) loaders[tab](1);
+    }
+
+    // ============================================================
+    //  退出登录
+    // ============================================================
+    function doLogout() {
+        layer.confirm('<i class="fas fa-right-from-bracket" style="color:#ff6b6b;"></i> 确定要退出登录吗？', { icon: 3, title: '提示' }, function(index) {
+            $.ajax({
+                url: '/api/auth/logout', method: 'POST',
+                headers: { 'Authorization': token },
+                complete: function() {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                }
+            });
+            layer.close(index);
+        });
+    }
+
+    // ============================================================
+    //  公共弹窗工具
+    // ============================================================
+
+    /**
+     * 打开 Layui 弹窗
+     * @param {string} title - 弹窗标题
+     * @param {string} contentHtml - HTML 内容
+     * @param {string} area - 尺寸如 ['600px', '480px']
+     * @param {function} callback - 点击保存的回调(index)
+     */
+    function openLayer(title, contentHtml, area, callback) {
+        layer.open({
+            type: 1, title: title, area: area || ['600px', '480px'],
+            content: contentHtml, shadeClose: true,
+            btn: ['<i class="fas fa-check"></i> 保存', '<i class="fas fa-times"></i> 取消'],
+            yes: function(index) { callback(index); },
+            btn2: function(index) { layer.close(index); }
+        });
+    }
+
+    /**
+     * 渲染分页组件
+     * @param {string} elem - 分页容器 ID
+     * @param {object} pageInfo - 分页信息 {current, total, size}
+     * @param {function} loadFn - 翻页回调函数
+     */
+    function renderPager(elem, pageInfo, loadFn) {
+        layui.laypage.render({
+            elem: elem,
+            curr: pageInfo.current,
+            count: pageInfo.total,
+            limit: pageInfo.size || 10,
+            prev: '<i class="fas fa-chevron-left"></i>',
+            next: '<i class="fas fa-chevron-right"></i>',
+            jump: function(obj, first) { if (!first) loadFn(obj.curr); }
+        });
+    }
+
+    /**
+     * HTML 转义（防 XSS）
+     */
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ============================================================
+    //  URL 单元格工具（截断 + 复制）
+    // ============================================================
+    /**
+     * 渲染 URL 单元格 HTML（带截断和复制按钮）
+     * @param {string} url - 完整的 URL
+     * @returns {string} HTML 字符串
+     */
+    function renderUrlCell(url) {
+        if (!url) return '<td class="url-cell" title=""><span class="url-text" style="color:#ccc;">-</span></td>';
+        var safeUrl = escHtml(url);
+        return '<td class="url-cell" title="' + safeUrl + '">' +
+            '<span class="url-text">' + safeUrl + '</span>' +
+            '<button class="url-copy-btn" onclick="copyUrl(this,\'' + safeUrl.replace(/'/g, "\\'") + '\')" title="复制URL"><i class="fas fa-copy"></i></button>' +
+            '</td>';
+    }
+
+    /**
+     * 复制 URL 到剪贴板
+     */
+    function copyUrl(btn, url) {
+        if (!url) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+                btn.className = 'url-copy-btn copied';
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(function() { btn.className = 'url-copy-btn'; btn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500);
+            });
+        } else {
+            // fallback
+            var ta = document.createElement('textarea');
+            ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            btn.className = 'url-copy-btn copied';
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(function() { btn.className = 'url-copy-btn'; btn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500);
+        }
+    }
+
+    // ============================================================
+    //  初始化 - Layui 加载完成后的入口
+    // ============================================================
+    layui.use(['layer', 'jquery', 'laypage'], function() {
+        layer = layui.layer;
+        $ = layui.jquery;
+
+        // 获取当前登录用户信息
+        $.ajax({
+            url: '/api/auth/info', method: 'GET',
+            headers: { 'Authorization': token },
+            success: function(res) {
+                if (res.code === 200) {
+                    var u = res.data;
+                    document.getElementById('userName').textContent = u.nickname || u.username;
+                    document.getElementById('userAvatar').textContent = (u.nickname || u.username).charAt(0).toUpperCase();
+                }
+            }
+        });
+
+        // 默认加载第一个页面
+        switchTab('interface');
+    });
+</script>
+</body>
+</html>

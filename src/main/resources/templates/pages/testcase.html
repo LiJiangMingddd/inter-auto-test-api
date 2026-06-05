@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     用例管理页面碎片
+     ============================================================ -->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="testcase-page">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-vial"></i> 用例列表</h3>
+            <div class="toolbar">
+                <div class="search-bar">
+                    <input class="layui-input" id="tcInterfaceId" placeholder="按接口ID筛选..." style="width:160px;">
+                    <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadTestcase(1)">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <button class="layui-btn layui-btn-sm" onclick="showTestcaseForm()">
+                    <i class="fas fa-plus"></i> 新增用例
+                </button>
+            </div>
+        </div>
+        <table class="layui-table" lay-skin="line">
+            <thead>
+            <tr>
+                <th style="width:60px;">ID</th>
+                <th style="width:80px;">接口ID</th>
+                <th>用例标题</th>
+                <th style="width:80px;">环境</th>
+                <th style="width:60px;">排序</th>
+                <th style="width:80px;">状态</th>
+                <th style="width:150px;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="testcaseTbody"></tbody>
+        </table>
+        <div id="testcasePage" style="text-align:center;padding:10px 0;"></div>
+    </div>
+
+    <script>
+    // ============================================================
+    //  用例 CRUD
+    // ============================================================
+
+    /** 加载用例列表 */
+    function loadTestcase(page) {
+        var interfaceId = document.getElementById('tcInterfaceId') ? document.getElementById('tcInterfaceId').value : '';
+        var url = '/api/testcase/page?pageNum=' + page + '&pageSize=10';
+        if (interfaceId) url += '&interfaceId=' + interfaceId;
+        ajax({
+            url: url,
+            success: function(res) {
+                if (res.code !== 200) { layer.msg(res.msg); return; }
+                var data = res.data, html = '';
+                (data.records || []).forEach(function(item, i) {
+                    var statusHtml = item.enabled === 1
+                        ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
+                        : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
+                    var envHtml = item.env === 'dev' ? '<span class="env-badge dev"><i class="fas fa-code-branch"></i> DEV</span>'
+                        : item.env === 'uat' ? '<span class="env-badge uat"><i class="fas fa-code-branch"></i> UAT</span>'
+                        : item.env === 'pro' ? '<span class="env-badge pro"><i class="fas fa-code-branch"></i> PRO</span>'
+                        : '<span class="tag tag-primary">' + (item.env||'DEV') + '</span>';
+                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
+                        '<td>' + item.id + '</td>' +
+                        '<td>' + item.interfaceId + '</td>' +
+                        '<td><strong>' + escHtml(item.caseTitle) + '</strong></td>' +
+                        '<td>' + envHtml + '</td>' +
+                        '<td>' + (item.sortOrder||0) + '</td>' +
+                        '<td>' + statusHtml + '</td>' +
+                        '<td>' +
+                        '<button class="action-btn edit" onclick="editTestcase(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
+                        '<button class="action-btn danger" onclick="deleteTestcase(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
+                        '</td></tr>';
+                });
+                if (!html) {
+                    html = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-flask"></i><p>暂无用例数据</p></div></td></tr>';
+                }
+                document.getElementById('testcaseTbody').innerHTML = html;
+                renderPager('testcasePage', data, loadTestcase);
+            }
+        });
+    }
+
+    /** 打开用例表单弹窗 */
+    function showTestcaseForm(data) {
+        var isEdit = !!data;
+        var title = isEdit ? '编辑用例' : '新增用例';
+        var d = data || {};
+
+        var html =
+            '<div style="padding:24px 28px;">' +
+            '<div class="layui-form">' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-link"></i> 接口ID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_tc_interfaceId" class="layui-input" value="' + (d.interfaceId||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-heading"></i> 标题</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_tc_title" class="layui-input" value="' + escHtml(d.caseTitle||'') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-code"></i> 请求数据</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_tc_data" class="layui-textarea" style="min-height:80px;font-family:monospace;">' + escHtml(d.caseData||'') + '</textarea></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-check-double"></i> 断言规则</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_tc_rules" class="layui-textarea" style="min-height:60px;font-family:monospace;">' + escHtml(d.checkRules||'') + '</textarea></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-bullseye"></i> 期望结果</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_tc_expected" class="layui-textarea" style="min-height:60px;font-family:monospace;">' + escHtml(d.expectedResults||'') + '</textarea></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-globe"></i> 环境</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_tc_env" class="layui-input">' +
+            '<option value="dev"' + (!d.env||d.env==='dev'?'selected':'') + '>DEV</option>' +
+            '<option value="uat"' + (d.env==='uat'?'selected':'') + '>UAT</option>' +
+            '<option value="pro"' + (d.env==='pro'?'selected':'') + '>PRO</option>' +
+            '</select></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sort-numeric-up"></i> 排序</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_tc_sort" class="layui-input" value="' + (d.sortOrder||0) + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_tc_enabled" class="layui-input"><option value="1"' + (d.enabled!==0?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
+            '</div></div>';
+
+        openLayer(title, html, ['620px', '520px'], function(index) {
+            var obj = {
+                interfaceId: parseInt(document.getElementById('f_tc_interfaceId').value),
+                caseTitle: document.getElementById('f_tc_title').value,
+                caseData: document.getElementById('f_tc_data').value,
+                checkRules: document.getElementById('f_tc_rules').value,
+                expectedResults: document.getElementById('f_tc_expected').value,
+                env: document.getElementById('f_tc_env').value,
+                sortOrder: parseInt(document.getElementById('f_tc_sort').value) || 0,
+                enabled: parseInt(document.getElementById('f_tc_enabled').value)
+            };
+            if (isEdit) obj.id = d.id;
+            ajax({
+                url: '/api/testcase', method: isEdit ? 'PUT' : 'POST',
+                contentType: 'application/json', data: JSON.stringify(obj),
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadTestcase(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+
+    function editTestcase(id) {
+        ajax({ url: '/api/testcase/' + id, success: function(res) { if (res.code === 200) showTestcaseForm(res.data); } });
+    }
+
+    function deleteTestcase(id) {
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;"></i> 确定删除该用例？', { icon: 3, title: '确认' }, function(index) {
+            ajax({ url: '/api/testcase/' + id, method: 'DELETE',
+                success: function(res) {
+                    if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadTestcase(1); }
+                    else { layer.msg(res.msg, {icon:2}); }
+                }
+            });
+        });
+    }
+</script>
+</div>
