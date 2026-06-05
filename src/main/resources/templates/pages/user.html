@@ -61,7 +61,7 @@
                         '<td>' + escHtml(item.nickname||'-') + '</td>' +
                         '<td>' + escHtml(item.email||'-') + '</td>' +
                         '<td>' + escHtml(item.phone||'-') + '</td>' +
-                        '<td><code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;">' + escHtml(item.appId||'-') + '</code></td>' +
+                        '<td><code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;color:#82aaff;">' + escHtml(item.appId||'-') + '</code></td>' +
                         '<td>' + statusHtml + '</td>' +
                         '<td>' +
                         '<button class="action-btn edit" onclick="editUser(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
@@ -120,13 +120,13 @@
                         // 新增时展示自动生成的 appId 和 appKey
                         if (!isEdit && res.data && res.data.appKey) {
                             var keyHtml = '<div style="padding:24px 28px;text-align:center;">' +
-                                '<div style="font-size:48px;color:#2e7d32;margin-bottom:12px;"><i class="fas fa-check-circle"></i></div>' +
-                                '<h3 style="margin-bottom:16px;color:#1a1a2e;">用户创建成功！</h3>' +
-                                '<div style="background:#f5f7fa;border-radius:8px;padding:16px;text-align:left;margin-bottom:16px;">' +
-                                '<p style="margin:6px 0;font-size:13px;color:#666;"><strong>AppID：</strong></p>' +
-                                '<p style="margin:6px 0;font-size:14px;color:#1a1a2e;word-break:break-all;font-family:monospace;" id="genAppId">' + escHtml(res.data.appId) + '</p>' +
-                                '<p style="margin:12px 0 6px;font-size:13px;color:#666;"><strong>AppKey：</strong><span style="color:#e53935;font-weight:600;">（仅显示一次，请立即复制保存！）</span></p>' +
-                                '<p style="margin:6px 0;font-size:14px;color:#1a1a2e;word-break:break-all;font-family:monospace;background:#fff8e1;padding:8px 12px;border-radius:4px;border:1px solid #ffe082;" id="genAppKey">' + escHtml(res.data.appKey) + '</p>' +
+                                '<div style="font-size:48px;color:#66bb6a;margin-bottom:12px;"><i class="fas fa-check-circle"></i></div>' +
+                                '<h3 style="margin-bottom:16px;color:#e0e0f0;">用户创建成功！</h3>' +
+                                '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:16px;text-align:left;margin-bottom:16px;border:1px solid rgba(255,255,255,0.06);">' +
+                                '<p style="margin:6px 0;font-size:13px;color:#8899b0;"><strong style="color:#c0c8d8;">AppID：</strong></p>' +
+                                '<p style="margin:6px 0;font-size:14px;color:#e0e0f0;word-break:break-all;font-family:monospace;" id="genAppId">' + escHtml(res.data.appId) + '</p>' +
+                                '<p style="margin:12px 0 6px;font-size:13px;color:#8899b0;"><strong style="color:#ef5350;">AppKey：</strong><span style="color:#ef5350;font-weight:600;">（仅显示一次，请立即复制保存！）</span></p>' +
+                                '<p style="margin:6px 0;font-size:14px;color:#e0e0f0;word-break:break-all;font-family:monospace;background:rgba(255,255,255,0.06);padding:8px 12px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);" id="genAppKey">' + escHtml(res.data.appKey) + '</p>' +
                                 '</div>' +
                                 '<div style="display:flex;gap:12px;justify-content:center;">' +
                                 '<button class="layui-btn layui-btn-sm layui-btn-primary" onclick="var t=document.getElementById(\'genAppId\');navigator.clipboard.writeText(t.textContent);layer.msg(\'AppID 已复制\',{icon:1,time:1500});"><i class="fas fa-copy"></i> 复制 AppID</button>' +
@@ -179,7 +179,7 @@
                         var userRoleIds = (res2.code === 200 && res2.data) ? res2.data : [];
                         roles.forEach(function(r) {
                             var checked = userRoleIds.indexOf(r.id) > -1 ? 'checked' : '';
-                            roleCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid #f5f5f5;"><input type="checkbox" name="roleChk" value="' + r.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(r.roleName) + ' <small>(' + escHtml(r.roleCode) + ')</small>"></div>';
+                            roleCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><input type="checkbox" name="roleChk" value="' + r.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(r.roleName) + ' <small>(' + escHtml(r.roleCode) + ')</small>"></div>';
                         });
                         if (!roles.length) {
                             roleCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无角色，请先创建角色</div>';

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/interface")
@@ -42,6 +43,28 @@ public class ApiInterfaceController {
     @SaCheckPermission("api:manage")
     public Result<ApiInterface> getById(@PathVariable Long id) {
         return Result.ok(apiInterfaceService.getById(id));
+    }
+
+    /**
+     * 接口详情：包含关联的测试用例列表
+     */
+    @GetMapping("/{id}/detail")
+    @SaCheckPermission("api:manage")
+    public Result<Map<String, Object>> detail(@PathVariable Long id) {
+        ApiInterface apiInterface = apiInterfaceService.getById(id);
+        if (apiInterface == null) {
+            return Result.fail("接口不存在");
+        }
+        List<ApiTestcase> testcases = apiTestcaseService.list(
+                new LambdaQueryWrapper<ApiTestcase>()
+                        .eq(ApiTestcase::getInterfaceId, id)
+                        .orderByAsc(ApiTestcase::getSortOrder)
+                        .orderByDesc(ApiTestcase::getId));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("interface", apiInterface);
+        result.put("testcases", testcases);
+        result.put("testcaseCount", testcases.size());
+        return Result.ok(result);
     }
 
     @PostMapping

@@ -223,12 +223,12 @@
         line-height: 1.5;
     }
 
-    /* 文档内容样式 - 增强 GitHub 风格 */
+    /* 文档内容样式 - 暗夜 GitHub 风格 */
     .markdown-body {
         font-family: -apple-system, "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
         font-size: 15px;
         line-height: 1.8;
-        color: #24292e;
+        color: #c0c8d8;
         word-wrap: break-word;
     }
     .markdown-body h1 {
@@ -236,24 +236,24 @@
         border-bottom: 2px solid #667eea;
         padding-bottom: .3em;
         margin: 1.2em 0 .6em;
-        color: #1a1a2e;
+        color: #e0e0f0;
     }
     .markdown-body h2 {
         font-size: 1.5em;
-        border-bottom: 1px solid #eaecef;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
         padding-bottom: .3em;
         margin: 1.2em 0 .5em;
-        color: #1a1a2e;
+        color: #e0e0f0;
     }
     .markdown-body h3 {
         font-size: 1.2em;
         margin: 1em 0 .5em;
-        color: #2c3e50;
+        color: #d0d8e8;
     }
     .markdown-body h4 {
         font-size: 1em;
         margin: 1em 0 .5em;
-        color: #34495e;
+        color: #c0c8d8;
     }
     .markdown-body p {
         margin: .6em 0;
@@ -266,16 +266,16 @@
         margin: .3em 0;
     }
     .markdown-body code {
-        background: #f0f2ff;
-        color: #667eea;
+        background: rgba(102,126,234,0.12);
+        color: #82aaff;
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 13px;
         font-family: "Fira Code", Consolas, "Courier New", monospace;
     }
     .markdown-body pre {
-        background: #f5f7fa;
-        border: 1px solid #e8e8e8;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
         border-radius: 8px;
         padding: 16px 20px;
         overflow-x: auto;
@@ -284,11 +284,11 @@
         transition: box-shadow 0.2s;
     }
     .markdown-body pre:hover {
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     .markdown-body pre code {
         background: none;
-        color: #333;
+        color: #c0c8d8;
         padding: 0;
         border-radius: 0;
         font-size: 13px;
@@ -298,8 +298,8 @@
         border-left: 4px solid #667eea;
         padding: .5em 1em;
         margin: .8em 0;
-        background: #f8f9ff;
-        color: #555;
+        background: rgba(102,126,234,0.06);
+        color: #8899b0;
         border-radius: 0 6px 6px 0;
     }
     .markdown-body table {
@@ -308,46 +308,46 @@
         margin: .8em 0;
         border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.2);
         transition: box-shadow 0.2s;
     }
     .markdown-body table:hover {
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     .markdown-body table th, .markdown-body table td {
-        border: 1px solid #dfe2e5;
+        border: 1px solid rgba(255,255,255,0.06);
         padding: 10px 14px;
         text-align: left;
     }
     .markdown-body table th {
-        background: #667eea;
+        background: linear-gradient(135deg, #667eea, #764ba2);
         color: #fff;
         font-weight: 600;
         font-size: 14px;
     }
     .markdown-body table tr:nth-child(even) {
-        background: #fafbfc;
+        background: rgba(255,255,255,0.02);
     }
     .markdown-body table tr:hover td {
-        background: #f0f2ff;
+        background: rgba(102,126,234,0.06);
     }
     .markdown-body hr {
         border: none;
         border-top: 2px solid #667eea;
         margin: 1.8em 0;
-        opacity: 0.3;
+        opacity: 0.2;
     }
     .markdown-body strong {
         font-weight: 600;
-        color: #1a1a2e;
+        color: #e0e0f0;
     }
     .markdown-body a {
-        color: #667eea;
+        color: #82aaff;
         text-decoration: none;
         transition: color 0.2s;
     }
     .markdown-body a:hover {
-        color: #764ba2;
+        color: #667eea;
         text-decoration: underline;
     }
     .markdown-body img {

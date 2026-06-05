@@ -84,6 +84,57 @@ public class AuthController {
         return Result.ok(result);
     }
 
+    @PostMapping("/changePassword")
+    public Result<Void> changePassword(@RequestBody Map<String, String> body) {
+        // 1. 校验是否已登录
+        if (!StpUtil.isLogin()) {
+            return Result.fail(401, "用户未登录");
+        }
+
+        String oldPassword = body.get("oldPassword");
+        String newPassword = body.get("newPassword");
+        String confirmPassword = body.get("confirmPassword");
+
+        // 2. 参数校验
+        if (oldPassword == null || oldPassword.isEmpty()) {
+            return Result.fail(400, "旧密码不能为空");
+        }
+        if (newPassword == null || newPassword.isEmpty()) {
+            return Result.fail(400, "新密码不能为空");
+        }
+        if (confirmPassword == null || confirmPassword.isEmpty()) {
+            return Result.fail(400, "确认密码不能为空");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            return Result.fail(400, "两次输入的新密码不一致");
+        }
+        if (oldPassword.equals(newPassword)) {
+            return Result.fail(400, "新密码不能与旧密码相同");
+        }
+
+        // 3. 获取当前登录用户
+        Long userId = StpUtil.getLoginIdAsLong();
+        SysUser user = sysUserService.getById(userId);
+        if (user == null) {
+            return Result.fail("用户不存在");
+        }
+
+        // 4. 校验旧密码
+        String md5OldPassword = SecureUtil.md5(oldPassword);
+        if (!md5OldPassword.equals(user.getPassword())) {
+            return Result.fail(400, "旧密码错误");
+        }
+
+        // 5. 更新密码
+        user.setPassword(SecureUtil.md5(newPassword));
+        sysUserService.updateById(user);
+
+        // 6. 可选：让用户重新登录（强制下线）
+        // StpUtil.logout(userId);
+
+        return Result.ok();
+    }
+
     @GetMapping("/info")
     public Result<Map<String, Object>> info() {
         Long userId = StpUtil.getLoginIdAsLong();

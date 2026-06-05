@@ -10,7 +10,7 @@
             <h3><i class="fas fa-vial"></i> 用例列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="tcInterfaceId" placeholder="按接口ID筛选..." style="width:160px;">
+                    <input class="layui-input" id="tcKeyword" placeholder="按用例标题搜索..." style="width:200px;">
                     <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadTestcase(1)">
                         <i class="fas fa-search"></i> 搜索
                     </button>
@@ -23,8 +23,6 @@
         <table class="layui-table" lay-skin="line">
             <thead>
             <tr>
-                <th style="width:60px;">ID</th>
-                <th style="width:80px;">接口ID</th>
                 <th>用例标题</th>
                 <th style="width:80px;">环境</th>
                 <th style="width:60px;">排序</th>
@@ -44,9 +42,9 @@
 
     /** 加载用例列表 */
     function loadTestcase(page) {
-        var interfaceId = document.getElementById('tcInterfaceId') ? document.getElementById('tcInterfaceId').value : '';
+        var keyword = document.getElementById('tcKeyword') ? document.getElementById('tcKeyword').value : '';
         var url = '/api/testcase/page?pageNum=' + page + '&pageSize=10';
-        if (interfaceId) url += '&interfaceId=' + interfaceId;
+        if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
         ajax({
             url: url,
             success: function(res) {
@@ -61,8 +59,6 @@
                         : item.env === 'pro' ? '<span class="env-badge pro"><i class="fas fa-code-branch"></i> PRO</span>'
                         : '<span class="tag tag-primary">' + (item.env||'DEV') + '</span>';
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td>' + item.id + '</td>' +
-                        '<td>' + item.interfaceId + '</td>' +
                         '<td><strong>' + escHtml(item.caseTitle) + '</strong></td>' +
                         '<td>' + envHtml + '</td>' +
                         '<td>' + (item.sortOrder||0) + '</td>' +
@@ -73,7 +69,7 @@
                         '</td></tr>';
                 });
                 if (!html) {
-                    html = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-flask"></i><p>暂无用例数据</p></div></td></tr>';
+                    html = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-flask"></i><p>暂无用例数据</p></div></td></tr>';
                 }
                 document.getElementById('testcaseTbody').innerHTML = html;
                 renderPager('testcasePage', data, loadTestcase);
@@ -87,26 +83,32 @@
         var title = isEdit ? '编辑用例' : '新增用例';
         var d = data || {};
 
+        var selStyle = 'width:100%;height:38px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0 10px;font-size:14px;background:rgba(255,255,255,0.06);color:#e0e0f0;box-sizing:border-box;outline:none;';
+        var inpStyle = 'width:100%;height:38px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0 12px;font-size:14px;background:rgba(255,255,255,0.06);color:#e0e0f0;box-sizing:border-box;outline:none;transition:border-color .3s;';
+        var taStyle = 'width:100%;min-height:70px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:10px 12px;font-size:13px;font-family:monospace;background:rgba(255,255,255,0.06);color:#c0c8d8;box-sizing:border-box;outline:none;resize:vertical;transition:border-color .3s;';
+        var rowStyle = 'display:flex;align-items:flex-start;margin-bottom:12px;';
+        var lblStyle = 'width:85px;font-size:14px;color:#8899b0;flex-shrink:0;padding-top:8px;';
+        var wrapStyle = 'flex:1;';
+
         var html =
-            '<div style="padding:24px 28px;">' +
-            '<div class="layui-form">' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-link"></i> 接口ID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_tc_interfaceId" class="layui-input" value="' + (d.interfaceId||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-heading"></i> 标题</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_tc_title" class="layui-input" value="' + escHtml(d.caseTitle||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-code"></i> 请求数据</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_tc_data" class="layui-textarea" style="min-height:80px;font-family:monospace;">' + escHtml(d.caseData||'') + '</textarea></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-check-double"></i> 断言规则</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_tc_rules" class="layui-textarea" style="min-height:60px;font-family:monospace;">' + escHtml(d.checkRules||'') + '</textarea></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-bullseye"></i> 期望结果</label><div class="layui-input-block" style="margin-left:110px;"><textarea id="f_tc_expected" class="layui-textarea" style="min-height:60px;font-family:monospace;">' + escHtml(d.expectedResults||'') + '</textarea></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-globe"></i> 环境</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_tc_env" class="layui-input">' +
+            '<div style="padding:18px 22px;">' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-link" style="color:#667eea;width:18px;"></i> 接口ID</div><div style="' + wrapStyle + '"><input id="f_tc_interfaceId" style="' + inpStyle + '" value="' + (d.interfaceId||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-heading" style="color:#667eea;width:18px;"></i> 标题</div><div style="' + wrapStyle + '"><input id="f_tc_title" style="' + inpStyle + '" value="' + escHtml(d.caseTitle||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-code" style="color:#667eea;width:18px;"></i> 请求数据</div><div style="' + wrapStyle + '"><textarea id="f_tc_data" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'">' + escHtml(d.caseData||'') + '</textarea></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-check-double" style="color:#667eea;width:18px;"></i> 断言规则</div><div style="' + wrapStyle + '"><textarea id="f_tc_rules" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'">' + escHtml(d.checkRules||'') + '</textarea></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-bullseye" style="color:#667eea;width:18px;"></i> 期望结果</div><div style="' + wrapStyle + '"><textarea id="f_tc_expected" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'">' + escHtml(d.expectedResults||'') + '</textarea></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-globe" style="color:#667eea;width:18px;"></i> 环境</div><div style="' + wrapStyle + '"><select id="f_tc_env" style="' + selStyle + '">' +
             '<option value="dev"' + (!d.env||d.env==='dev'?'selected':'') + '>DEV</option>' +
             '<option value="uat"' + (d.env==='uat'?'selected':'') + '>UAT</option>' +
             '<option value="pro"' + (d.env==='pro'?'selected':'') + '>PRO</option>' +
             '</select></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sort-numeric-up"></i> 排序</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_tc_sort" class="layui-input" value="' + (d.sortOrder||0) + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_tc_enabled" class="layui-input"><option value="1"' + (d.enabled!==0?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
-            '</div></div>';
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-sort-numeric-up" style="color:#667eea;width:18px;"></i> 排序</div><div style="' + wrapStyle + '"><input id="f_tc_sort" style="' + inpStyle + '" value="' + (d.sortOrder||0) + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'#d9d9d9\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-toggle-on" style="color:#667eea;width:18px;"></i> 状态</div><div style="' + wrapStyle + '"><select id="f_tc_enabled" style="' + selStyle + '"><option value="1"' + (d.enabled!==0?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
+            '</div>';
 
         openLayer(title, html, ['620px', '520px'], function(index) {
             var obj = {
-                interfaceId: parseInt(document.getElementById('f_tc_interfaceId').value),
+                interfaceId: parseInt(document.getElementById('f_tc_interfaceId').value) || 0,
                 caseTitle: document.getElementById('f_tc_title').value,
                 caseData: document.getElementById('f_tc_data').value,
                 checkRules: document.getElementById('f_tc_rules').value,

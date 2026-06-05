@@ -23,14 +23,14 @@
         <table class="layui-table" lay-skin="line">
             <thead>
             <tr>
-                <th style="width:60px;">ID</th>
                 <th>接口名称</th>
                 <th style="width:80px;">方法</th>
                 <th>DEV 地址</th>
                 <th>UAT 地址</th>
                 <th>PRO 地址</th>
+                <th style="width:60px;">用例</th>
                 <th style="width:80px;">状态</th>
-                <th style="width:150px;">操作</th>
+                <th style="width:200px;">操作</th>
             </tr>
             </thead>
             <tbody id="interfaceTbody"></tbody>
@@ -54,15 +54,17 @@
                     var statusHtml = item.enabled === 1
                         ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
                         : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
+                    var tcCount = item.testcaseCount != null ? item.testcaseCount : '-';
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td>' + item.id + '</td>' +
                         '<td><strong>' + escHtml(item.apiName) + '</strong>' + (item.apiInfo ? '<br><small style="color:#999;">' + escHtml(item.apiInfo) + '</small>' : '') + '</td>' +
                         '<td><span class="tag tag-primary">' + escHtml(item.method) + '</span></td>' +
                         renderUrlCell(item.urlDev) +
                         renderUrlCell(item.urlUat) +
                         renderUrlCell(item.urlPro) +
+                        '<td style="text-align:center;"><span class="tag tag-primary">' + tcCount + '</span></td>' +
                         '<td>' + statusHtml + '</td>' +
                         '<td>' +
+                        '<button class="action-btn perm" onclick="showInterfaceDetail(' + item.id + ')" title="查看详情"><i class="fas fa-eye"></i> 详情</button> ' +
                         '<button class="action-btn edit" onclick="editInterface(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
                         '<button class="action-btn danger" onclick="deleteInterface(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
                         '</td></tr>';
@@ -76,26 +78,97 @@
         });
     }
 
+    /** 接口详情弹窗：展示接口信息 + 关联测试用例 */
+    function showInterfaceDetail(interfaceId) {
+        ajax({
+            url: '/api/interface/' + interfaceId + '/detail',
+            success: function(res) {
+                if (res.code !== 200) { layer.msg(res.msg); return; }
+                var data = res.data;
+                var iface = data.interface;
+                var testcases = data.testcases || [];
+
+                // 接口基本信息
+                var infoHtml =
+                    '<div style="margin-bottom:16px;">' +
+                    '<table class="layui-table" style="margin:0;">' +
+                    '<tr><td style="width:100px;color:#8899b0;">接口名称</td><td style="color:#e0e0f0;"><strong>' + escHtml(iface.apiName) + '</strong></td></tr>' +
+                    (iface.apiInfo ? '<tr><td style="color:#8899b0;">描述</td><td style="color:#c0c8d8;">' + escHtml(iface.apiInfo) + '</td></tr>' : '') +
+                    '<tr><td style="color:#8899b0;">请求方法</td><td><span class="tag tag-primary">' + escHtml(iface.method) + '</span></td></tr>' +
+                    '<tr><td style="color:#8899b0;">服务编码</td><td style="color:#c0c8d8;">' + escHtml(iface.serviceCode||'-') + '</td></tr>' +
+                    '<tr><td style="color:#8899b0;">状态</td><td>' + (iface.enabled === 1 ? '<span class="tag tag-success">启用</span>' : '<span class="tag tag-danger">禁用</span>') + '</td></tr>' +
+                    '</table></div>';
+
+                // URL 信息
+                var urlHtml = '<div style="display:flex;gap:10px;margin-bottom:16px;">';
+                var urls = [
+                    { label: 'DEV', url: iface.urlDev, cls: 'dev' },
+                    { label: 'UAT', url: iface.urlUat, cls: 'uat' },
+                    { label: 'PRO', url: iface.urlPro, cls: 'pro' }
+                ];
+                urls.forEach(function(u) {
+                    urlHtml += '<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;border:1px solid rgba(255,255,255,0.06);">' +
+                        '<div style="font-size:11px;color:#8899b0;margin-bottom:4px;"><span class="env-badge ' + u.cls + '">' + u.label + '</span></div>' +
+                        '<div style="font-size:12px;word-break:break-all;font-family:monospace;color:#c0c8d8;">' + (u.url ? escHtml(u.url) : '<span style="color:#5a6a80;">未配置</span>') + '</div></div>';
+                });
+                urlHtml += '</div>';
+
+                // 用例列表
+                var tcHtml = '<h4 style="margin:16px 0 10px;font-size:14px;color:#e0e0f0;"><i class="fas fa-vial" style="color:#667eea;"></i> 关联测试用例（共 ' + testcases.length + ' 个）</h4>';
+                if (testcases.length === 0) {
+                    tcHtml += '<div class="empty-state" style="padding:20px 0;"><i class="fas fa-flask" style="font-size:28px;"></i><p style="font-size:13px;">暂无用例</p></div>';
+                } else {
+                    tcHtml += '<table class="layui-table" lay-skin="line" style="margin:0;font-size:13px;">' +
+                        '<thead><tr><th style="width:50px;">#</th><th>用例标题</th><th style="width:60px;">环境</th><th style="width:40px;">排序</th><th style="width:60px;">状态</th></tr></thead><tbody>';
+                    testcases.forEach(function(tc, i) {
+                        var envHtml = tc.env === 'dev' ? '<span class="env-badge dev">DEV</span>'
+                            : tc.env === 'uat' ? '<span class="env-badge uat">UAT</span>'
+                            : tc.env === 'pro' ? '<span class="env-badge pro">PRO</span>'
+                            : '<span class="tag tag-primary">' + (tc.env||'-') + '</span>';
+                        var tcStatus = tc.enabled === 1
+                            ? '<span class="tag tag-success">启用</span>'
+                            : '<span class="tag tag-danger">禁用</span>';
+                        tcHtml += '<tr>' +
+                            '<td style="color:#5a6a80;">' + (i+1) + '</td>' +
+                            '<td style="color:#e0e0f0;"><strong>' + escHtml(tc.caseTitle) + '</strong></td>' +
+                            '<td>' + envHtml + '</td>' +
+                            '<td style="text-align:center;color:#c0c8d8;">' + (tc.sortOrder||0) + '</td>' +
+                            '<td>' + tcStatus + '</td></tr>';
+                    });
+                    tcHtml += '</tbody></table>';
+                }
+
+                var content = '<div style="padding:20px 24px;max-height:500px;overflow-y:auto;">' + infoHtml + urlHtml + tcHtml + '</div>';
+                openLayer('接口详情：' + escHtml(iface.apiName), content, ['780px', '520px'], null);
+            }
+        });
+    }
+
     /** 打开新增/编辑弹窗 */
     function showInterfaceForm(data) {
         var isEdit = !!data;
         var title = isEdit ? '编辑接口' : '新增接口';
         var d = data || {};
 
+        var selStyle = 'width:100%;height:38px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0 10px;font-size:14px;background:rgba(255,255,255,0.06);color:#e0e0f0;box-sizing:border-box;outline:none;';
+        var inpStyle = 'width:100%;height:38px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0 12px;font-size:14px;background:rgba(255,255,255,0.06);color:#e0e0f0;box-sizing:border-box;outline:none;transition:border-color .3s;';
+        var rowStyle = 'display:flex;align-items:center;margin-bottom:14px;';
+        var lblStyle = 'width:85px;font-size:14px;color:#8899b0;flex-shrink:0;';
+        var wrapStyle = 'flex:1;';
+
         var html =
-            '<div style="padding:24px 28px;">' +
-            '<div class="layui-form">' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-tag"></i> 名称</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_name" class="layui-input" value="' + escHtml(d.apiName||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-info-circle"></i> 描述</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_info" class="layui-input" value="' + escHtml(d.apiInfo||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-code"></i> 方法</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_method" class="layui-input">' +
+            '<div style="padding:20px 24px;">' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-tag" style="color:#667eea;width:18px;"></i> 名称</div><div style="' + wrapStyle + '"><input id="f_name" style="' + inpStyle + '" value="' + escHtml(d.apiName||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-info-circle" style="color:#667eea;width:18px;"></i> 描述</div><div style="' + wrapStyle + '"><input id="f_info" style="' + inpStyle + '" value="' + escHtml(d.apiInfo||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-code" style="color:#667eea;width:18px;"></i> 方法</div><div style="' + wrapStyle + '"><select id="f_method" style="' + selStyle + '">' +
             ['GET','POST','PUT','DELETE','PATCH'].map(function(m) { return '<option value="' + m + '"' + (d.method===m?'selected':'') + '>' + m + '</option>'; }).join('') +
             '</select></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-server"></i> DEV</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_urlDev" class="layui-input" value="' + escHtml(d.urlDev||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-server"></i> UAT</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_urlUat" class="layui-input" value="' + escHtml(d.urlUat||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-server"></i> PRO</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_urlPro" class="layui-input" value="' + escHtml(d.urlPro||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-cog"></i> 服务编码</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_serviceCode" class="layui-input" value="' + escHtml(d.serviceCode||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_enabled" class="layui-input"><option value="1"' + (d.enabled===1||d.enabled==null?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
-            '</div></div>';
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> DEV</div><div style="' + wrapStyle + '"><input id="f_urlDev" style="' + inpStyle + '" value="' + escHtml(d.urlDev||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> UAT</div><div style="' + wrapStyle + '"><input id="f_urlUat" style="' + inpStyle + '" value="' + escHtml(d.urlUat||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> PRO</div><div style="' + wrapStyle + '"><input id="f_urlPro" style="' + inpStyle + '" value="' + escHtml(d.urlPro||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-cog" style="color:#667eea;width:18px;"></i> 服务编码</div><div style="' + wrapStyle + '"><input id="f_serviceCode" style="' + inpStyle + '" value="' + escHtml(d.serviceCode||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.15)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-toggle-on" style="color:#667eea;width:18px;"></i> 状态</div><div style="' + wrapStyle + '"><select id="f_enabled" style="' + selStyle + '"><option value="1"' + (d.enabled===1||d.enabled==null?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
+            '</div>';
 
         openLayer(title, html, ['540px', '480px'], function(index) {
             var obj = {
@@ -125,7 +198,7 @@
     }
 
     function deleteInterface(id) {
-        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除该接口？', { icon: 3, title: '确认' }, function(index) {
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除该接口？<br><small style="color:#999;">关联的测试用例也会被删除</small>', { icon: 3, title: '确认' }, function(index) {
             ajax({ url: '/api/interface/' + id, method: 'DELETE',
                 success: function(res) {
                     if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadInterface(1); }
@@ -135,10 +208,12 @@
         });
     }
 
-    /** HTML 转义 */
+    /** HTML 转义（使用 index.html 全局定义） */
     function escHtml(str) {
         if (!str) return '';
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
     </script>
 </div>
+</body>
+</html>

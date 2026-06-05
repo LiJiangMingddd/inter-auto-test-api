@@ -11,6 +11,11 @@ spring:
       connection-timeout: 10000
       maximum-pool-size: 10
 
+  jackson:
+    # 允许 JSON 中包含 // 或 /* */ 注释（开发测试时方便）
+    parser:
+      allow-comments: true
+
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.lm.interautotestapi.entity

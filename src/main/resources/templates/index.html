@@ -11,15 +11,39 @@
     <!-- 样式库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css" rel="stylesheet">
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
     <style>
         /* ================================================================
-           全局样式
+           全局样式 - 暗夜风格 🌙
            ================================================================ */
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #111128;
+            --bg-card: rgba(255,255,255,0.04);
+            --bg-card-hover: rgba(255,255,255,0.07);
+            --bg-glass: rgba(255,255,255,0.03);
+            --text-primary: #e0e0f0;
+            --text-secondary: #8899b0;
+            --text-muted: #5a6a80;
+            --border-color: rgba(255,255,255,0.07);
+            --border-light: rgba(255,255,255,0.04);
+            --accent-purple: #667eea;
+            --accent-pink: #764ba2;
+            --accent-green: #38ef7d;
+            --accent-orange: #f5576c;
+            --shadow-color: rgba(0,0,0,0.3);
+            --table-hover: rgba(102,126,234,0.08);
+            --input-bg: rgba(255,255,255,0.06);
+            --scrollbar-thumb: rgba(255,255,255,0.12);
+            --scrollbar-track: transparent;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-            background: #f0f2f5; color: #333; overflow: hidden;
+            background: var(--bg-primary); color: var(--text-primary); overflow: hidden;
         }
 
         /* ===== 主布局容器 ===== */
@@ -29,43 +53,44 @@
            侧边栏
            ================================================================ */
         .sidebar {
-            width: 250px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            width: 250px; background: linear-gradient(180deg, #0d0d24 0%, #111133 100%);
             display: flex; flex-direction: column; flex-shrink: 0;
             transition: width 0.3s ease; z-index: 100;
-            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 30px rgba(0,0,0,0.4);
+            border-right: 1px solid rgba(255,255,255,0.04);
         }
         .sidebar-logo {
             padding: 22px 20px; text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .sidebar-logo .logo-icon {
             display: inline-flex; align-items: center; justify-content: center;
             width: 44px; height: 44px; border-radius: 12px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff; font-size: 20px; margin-bottom: 8px;
-            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+            box-shadow: 0 4px 20px rgba(102,126,234,0.25);
         }
-        .sidebar-logo h2 { color: #fff; font-size: 16px; font-weight: 600; letter-spacing: 1px; }
-        .sidebar-logo p { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 2px; }
+        .sidebar-logo h2 { color: #e0e0f0; font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+        .sidebar-logo p { color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 2px; }
 
         .sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 0; }
         .sidebar-nav::-webkit-scrollbar { width: 4px; }
-        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
         .nav-section { margin-bottom: 6px; }
         .nav-section-title {
-            padding: 8px 22px 4px; font-size: 11px; color: rgba(255,255,255,0.25);
+            padding: 8px 22px 4px; font-size: 11px; color: rgba(255,255,255,0.2);
             text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
         }
         .nav-item {
             display: flex; align-items: center; padding: 12px 22px;
-            color: rgba(255,255,255,0.55); cursor: pointer;
+            color: rgba(255,255,255,0.45); cursor: pointer;
             transition: all 0.25s ease; font-size: 14px;
             border-left: 3px solid transparent;
         }
-        .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+        .nav-item:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); }
         .nav-item.active {
-            background: rgba(102,126,234,0.15); color: #667eea;
+            background: rgba(102,126,234,0.12); color: #667eea;
             border-left-color: #667eea;
         }
         .nav-item i { width: 22px; font-size: 16px; margin-right: 10px; text-align: center; }
@@ -77,15 +102,17 @@
 
         /* ===== 顶部栏 ===== */
         .topbar {
-            height: 56px; background: #fff; flex-shrink: 0;
+            height: 56px; background: rgba(17,17,40,0.85); backdrop-filter: blur(16px);
+            flex-shrink: 0;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 28px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            padding: 0 28px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             z-index: 10;
         }
-        .topbar-left .page-title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
+        .topbar-left .page-title { font-size: 17px; font-weight: 600; color: #e0e0f0; }
         .topbar-left .page-title i { margin-right: 8px; color: #667eea; }
         .topbar-right { display: flex; align-items: center; gap: 18px; }
-        .topbar-right .user-info { display: flex; align-items: center; gap: 8px; color: #555; font-size: 14px; }
+        .topbar-right .user-info { display: flex; align-items: center; gap: 8px; color: #8899b0; font-size: 14px; }
         .topbar-right .user-info .avatar {
             width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -93,18 +120,21 @@
             color: #fff; font-size: 14px; font-weight: 600;
         }
         .logout-btn {
-            padding: 6px 16px; border: 1px solid #e8e8e8; border-radius: 8px;
-            background: #fff; color: #999; cursor: pointer; font-size: 13px;
+            padding: 6px 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            background: rgba(255,255,255,0.04); color: #8899b0; cursor: pointer; font-size: 13px;
             transition: all 0.25s;
         }
-        .logout-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+        .logout-btn:hover { border-color: rgba(255,255,255,0.2); color: #e0e0f0; background: rgba(255,255,255,0.08); }
 
         /* ===== 内容区 ===== */
         .content-area {
-            flex: 1; padding: 22px; overflow-y: auto; background: #f0f2f5;
+            flex: 1; padding: 22px; overflow-y: auto;
+            background: radial-gradient(ellipse at 30% 20%, rgba(102,126,234,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(118,75,162,0.04) 0%, transparent 50%),
+                        var(--bg-primary);
         }
         .content-area::-webkit-scrollbar { width: 6px; }
-        .content-area::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+        .content-area::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 
         /* ===== 页面面板 ===== */
         .page-panel { display: none; animation: fadeIn 0.35s ease; }
@@ -117,18 +147,24 @@
 
         /* ===== 卡片 ===== */
         .card {
-            background: #fff; border-radius: 14px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            background: var(--bg-card); border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
             padding: 22px 24px; margin-bottom: 20px;
-            transition: box-shadow 0.3s;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
         }
-        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+        .card:hover {
+            box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.1);
+            background: var(--bg-card-hover);
+        }
         .card-header {
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 18px; padding-bottom: 14px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
-        .card-header h3 { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .card-header h3 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
         .card-header h3 i { color: #667eea; margin-right: 8px; }
 
         /* ===== 工具栏 ===== */
@@ -136,31 +172,49 @@
         .toolbar .layui-btn { border-radius: 8px; }
         .search-bar { display: flex; align-items: center; gap: 10px; }
         .search-bar .layui-input {
-            border-radius: 8px; height: 36px; border: 1px solid #e8e8e8;
+            border-radius: 8px; height: 36px;
+            background: var(--input-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
             transition: border-color 0.3s;
         }
-        .search-bar .layui-input:focus { border-color: #667eea; }
+        .search-bar .layui-input:focus { border-color: #667eea !important; }
+        .search-bar .layui-input::placeholder { color: var(--text-muted); }
 
         /* ===== 表格 ===== */
-        .layui-table { border-radius: 10px; overflow: hidden; }
-        .layui-table th {
-            background: #fafafa !important; color: #555; font-weight: 600;
-            border-color: #f0f0f0 !important;
+        .layui-table {
+            border-radius: 10px; overflow: hidden;
+            background: transparent !important;
+            color: var(--text-primary) !important;
         }
-        .layui-table td, .layui-table th { padding: 10px 14px; }
-        .layui-table tr:hover td { background: #f8f9ff !important; }
+        .layui-table th {
+            background: rgba(255,255,255,0.04) !important;
+            color: var(--text-secondary) !important;
+            font-weight: 600;
+            border-color: var(--border-color) !important;
+        }
+        .layui-table td {
+            border-color: var(--border-light) !important;
+            color: var(--text-primary) !important;
+        }
+        .layui-table tr:hover td {
+            background: var(--table-hover) !important;
+        }
+        .layui-table tr {
+            transition: background 0.2s;
+        }
 
         /* ===== 状态标签 ===== */
         .tag { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-        .tag-success { background: #e8f5e9; color: #2e7d32; }
-        .tag-danger { background: #fbe9e7; color: #c62828; }
-        .tag-primary { background: #e3f2fd; color: #1565c0; }
-        .tag-warning { background: #fff3e0; color: #e65100; }
+        .tag-success { background: rgba(46,125,50,0.2); color: #66bb6a; }
+        .tag-danger { background: rgba(198,40,40,0.2); color: #ef5350; }
+        .tag-primary { background: rgba(21,101,192,0.2); color: #64b5f6; }
+        .tag-warning { background: rgba(230,81,0,0.2); color: #ffa726; }
 
         /* ===== URL 单元格截断 ===== */
         .url-cell {
             max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            font-size: 12px; color: #666; cursor: default;
+            font-size: 12px; color: var(--text-secondary); cursor: default;
             position: relative;
         }
         .url-cell .url-text {
@@ -171,13 +225,13 @@
         .url-cell .url-copy-btn {
             display: inline-flex; align-items: center; justify-content: center;
             width: 22px; height: 22px; border: none; border-radius: 4px;
-            background: transparent; color: #bbb; cursor: pointer;
+            background: transparent; color: rgba(255,255,255,0.2); cursor: pointer;
             font-size: 11px; transition: all 0.2s; vertical-align: middle; margin-left: 4px;
             opacity: 0;
         }
         .url-cell:hover .url-copy-btn { opacity: 1; }
-        .url-cell .url-copy-btn:hover { background: #e8f5e9; color: #2e7d32; }
-        .url-cell .url-copy-btn.copied { background: #e8f5e9; color: #2e7d32; }
+        .url-cell .url-copy-btn:hover { background: rgba(46,125,50,0.2); color: #66bb6a; }
+        .url-cell .url-copy-btn.copied { background: rgba(46,125,50,0.2); color: #66bb6a; }
 
         /* ===== 表格行进入动画 ===== */
         .table-row-enter { animation: rowSlideIn 0.35s ease both; }
@@ -192,9 +246,9 @@
             padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
             letter-spacing: 0.5px;
         }
-        .env-badge.dev { background: #e3f2fd; color: #1565c0; }
-        .env-badge.uat { background: #fff3e0; color: #e65100; }
-        .env-badge.pro { background: #fbe9e7; color: #c62828; }
+        .env-badge.dev { background: rgba(21,101,192,0.2); color: #64b5f6; }
+        .env-badge.uat { background: rgba(230,81,0,0.2); color: #ffa726; }
+        .env-badge.pro { background: rgba(198,40,40,0.2); color: #ef5350; }
 
         /* ===== 卡片/按钮动画增强 ===== */
         .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -208,7 +262,7 @@
         .layui-btn::after {
             content: ''; position: absolute; top: 50%; left: 50%;
             width: 0; height: 0; border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
             transition: width 0.4s, height 0.4s, opacity 0.4s;
             transform: translate(-50%, -50%); opacity: 0;
         }
@@ -222,16 +276,30 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-8px); }
         }
+        .empty-state { text-align: center; padding: 50px 0; color: var(--text-muted); }
+        .empty-state i { font-size: 48px; margin-bottom: 12px; }
 
         /* ===== 分页美化 ===== */
         .page-panel .layui-laypage { margin: 18px 0 0 !important; }
         .page-panel .layui-laypage a, .page-panel .layui-laypage span {
             border-radius: 6px !important; margin: 0 2px !important;
             transition: all 0.2s;
+            background: var(--input-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-secondary) !important;
+        }
+        .page-panel .layui-laypage a:hover {
+            background: rgba(102,126,234,0.15) !important;
+            color: #667eea !important;
         }
         .page-panel .layui-laypage .layui-laypage-curr .layui-laypage-em {
             border-radius: 6px !important;
             background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        }
+        .page-panel .layui-laypage .layui-laypage-curr span {
+            color: #fff !important;
+            background: transparent !important;
+            border-color: transparent !important;
         }
 
         /* ===== 弹窗美化 ===== */
@@ -239,13 +307,34 @@
             background: linear-gradient(135deg, #667eea, #764ba2) !important;
             color: #fff !important; border-radius: 12px 12px 0 0 !important;
         }
-        .layui-layer { border-radius: 12px !important; overflow: hidden; }
+        .layui-layer {
+            border-radius: 12px !important; overflow: hidden;
+            background: #1a1a35 !important;
+            box-shadow: 0 16px 60px rgba(0,0,0,0.5) !important;
+        }
+        .layui-layer-content {
+            color: var(--text-primary) !important;
+        }
+        .layui-layer-btn {
+            background: rgba(255,255,255,0.02) !important;
+            border-top: 1px solid var(--border-color) !important;
+        }
+        .layui-layer-btn a {
+            border-color: var(--border-color) !important;
+            background: var(--input-bg) !important;
+            color: var(--text-primary) !important;
+        }
+        .layui-layer-btn .layui-layer-btn0 {
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            border-color: transparent !important;
+            color: #fff !important;
+        }
 
         /* ===== 滚动条美化 ===== */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
 
         /* ===== 操作按钮 ===== */
         .action-btn {
@@ -253,18 +342,77 @@
             padding: 4px 12px; border: none; border-radius: 6px;
             font-size: 12px; cursor: pointer; transition: all 0.2s;
         }
-        .action-btn.edit { background: #e3f2fd; color: #1976d2; }
+        .action-btn.edit { background: rgba(25,118,210,0.15); color: #64b5f6; }
         .action-btn.edit:hover { background: #1976d2; color: #fff; }
-        .action-btn.role { background: #fff3e0; color: #e65100; }
+        .action-btn.role { background: rgba(230,81,0,0.15); color: #ffa726; }
         .action-btn.role:hover { background: #e65100; color: #fff; }
-        .action-btn.danger { background: #fbe9e7; color: #c62828; }
+        .action-btn.danger { background: rgba(198,40,40,0.15); color: #ef5350; }
         .action-btn.danger:hover { background: #c62828; color: #fff; }
-        .action-btn.perm { background: #e8f5e9; color: #2e7d32; }
+        .action-btn.perm { background: rgba(46,125,50,0.15); color: #66bb6a; }
         .action-btn.perm:hover { background: #2e7d32; color: #fff; }
 
-        /* ===== 空状态 ===== */
-        .empty-state { text-align: center; padding: 50px 0; color: #bbb; }
-        .empty-state i { font-size: 48px; margin-bottom: 12px; }
+        /* ===== Layui 输入框暗色适配 ===== */
+        .layui-input, .layui-textarea, .layui-select {
+            background: var(--input-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        .layui-input:focus, .layui-textarea:focus {
+            border-color: #667eea !important;
+        }
+        .layui-input::placeholder {
+            color: var(--text-muted) !important;
+        }
+        .layui-form-label {
+            color: var(--text-secondary) !important;
+        }
+
+        /* ===== Layui checkbox 暗色适配 ===== */
+        .layui-form-checkbox {
+            background: var(--input-bg) !important;
+            border-color: var(--border-color) !important;
+        }
+        .layui-form-checkbox span {
+            color: var(--text-primary) !important;
+        }
+        .layui-form-checkbox[lay-skin=primary] {
+            border-color: var(--border-color) !important;
+            background: transparent !important;
+        }
+        .layui-form-checkbox[lay-skin=primary] i {
+            border-color: var(--border-color) !important;
+            background: var(--input-bg) !important;
+        }
+        .layui-form-checkbox[lay-skin=primary]:hover i {
+            border-color: #667eea !important;
+        }
+
+        /* ===== Layui 下拉选择框暗色适配 ===== */
+        .layui-form-select .layui-input {
+            background: var(--input-bg) !important;
+        }
+        .layui-form-select dl {
+            background: #1a1a35 !important;
+            border-color: var(--border-color) !important;
+        }
+        .layui-form-select dl dd {
+            color: var(--text-primary) !important;
+        }
+        .layui-form-select dl dd:hover {
+            background: rgba(102,126,234,0.12) !important;
+        }
+        .layui-form-select dl dd.layui-this {
+            background: rgba(102,126,234,0.2) !important;
+            color: #667eea !important;
+        }
+
+        /* ===== 确认弹窗 ===== */
+        .layui-layer-dialog .layui-layer-content {
+            color: var(--text-primary) !important;
+        }
+        .layui-layer-dialog .layui-layer-setwin .layui-layer-close1 {
+            background: rgba(255,255,255,0.1) !important;
+        }
 
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {
@@ -274,6 +422,45 @@
             .nav-item i { margin: 0; }
             .topbar { padding: 0 16px; }
             .content-area { padding: 14px; }
+        }
+
+        /* ================================================================
+           Layui 表格暗色补丁
+           ================================================================ */
+        .layui-table-box, .layui-table-body, .layui-table-header {
+            background: transparent !important;
+        }
+        .layui-table-page {
+            background: transparent !important;
+            border-color: var(--border-color) !important;
+        }
+        .layui-table-page .layui-laypage a, .layui-table-page .layui-laypage span {
+            background: var(--input-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-secondary) !important;
+        }
+        .layui-table-page .layui-laypage .layui-laypage-curr span {
+            color: #fff !important;
+            background: transparent !important;
+        }
+        .layui-table-page .layui-laypage a:hover {
+            color: #667eea !important;
+        }
+
+        /* ===== 暗色模式下的表格列头 ===== */
+        .layui-table-init {
+            background: rgba(10,10,26,0.8) !important;
+        }
+        .layui-table-init .layui-icon {
+            color: #667eea !important;
+        }
+
+        /* ===== code 标签暗色适配 ===== */
+        code {
+            background: rgba(255,255,255,0.06) !important;
+            color: #82aaff !important;
+            padding: 2px 8px !important;
+            border-radius: 4px !important;
         }
     </style>
 </head>
@@ -303,7 +490,10 @@
             <!-- 开放接口 -->
             <div class="nav-section">
                 <div class="nav-section-title">
-                    <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 开放接口
+                    <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 数据与分析
+                </div>
+                <div class="nav-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+                    <i class="fas fa-chart-pie"></i><span>数据统计</span>
                 </div>
                 <div class="nav-item" data-tab="open-api" onclick="switchTab('open-api')">
                     <i class="fas fa-book-open"></i><span>Open API 文档</span>
@@ -344,6 +534,9 @@
                 <span class="page-title" id="pageTitle"><i class="fas fa-plug"></i> 接口管理</span>
             </div>
             <div class="topbar-right">
+                <button class="logout-btn" onclick="showChangePassword()" title="修改密码" style="margin-right:8px;">
+                    <i class="fas fa-key"></i>
+                </button>
                 <div class="user-info">
                     <div class="avatar" id="userAvatar">A</div>
                     <span id="userName">加载中...</span>
@@ -356,6 +549,9 @@
 
         <!-- 内容区 - 使用 th:insert 加载各页面碎片 -->
         <div class="content-area">
+
+            <!-- 数据统计 -->
+            <div class="page-panel" id="panel-dashboard" th:insert="pages/dashboard :: dashboard-page"></div>
 
             <!-- Open API 文档 -->
             <div class="page-panel" id="panel-open-api" th:insert="pages/open-api :: open-api-page"></div>
@@ -410,6 +606,13 @@
 
         // 注入统一的 error 处理（保留原始 error 回调）
         options.error = function(xhr) {
+            // ===== Token 过期/未登录 => 直接跳转登录页 =====
+            if (xhr.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+                return;
+            }
+
             var msg = '请求失败';
             try {
                 var resp = JSON.parse(xhr.responseText);
@@ -433,6 +636,12 @@
         // 包装 success：统一检查 code
         options.success = function(res) {
             if (res && res.code !== 200) {
+                // ===== Token 过期（Sa-Token 返回 code=401）=====
+                if (res.code === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                    return;
+                }
                 if (typeof layer !== 'undefined' && layer.msg) {
                     layer.msg('<i class=\"fas fa-exclamation-circle\"></i> ' + (res.msg || '操作失败'), {icon: 2, time: 3000});
                 } else {
@@ -463,6 +672,7 @@
         var titles = {
             interface: '<i class="fas fa-plug"></i> 接口管理',
             testcase: '<i class="fas fa-vial"></i> 用例管理',
+            dashboard: '<i class="fas fa-chart-pie"></i> 数据统计',
             user: '<i class="fas fa-users"></i> 用户管理',
             role: '<i class="fas fa-user-tag"></i> 角色管理',
             permission: '<i class="fas fa-shield-halved"></i> 权限管理',
@@ -471,7 +681,7 @@
         };
         document.getElementById('pageTitle').innerHTML = titles[tab] || tab;
         // 触发对应页面数据加载
-        var loaders = { interface: loadInterface, testcase: loadTestcase, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme' };
+        var loaders = { interface: loadInterface, testcase: loadTestcase, dashboard: loadDashboard, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme' };
         if (loaders[tab]) {
             if (loaders[tab] === 'readme') {
                 // readme 面板切换时由 readme.html 内部脚本自动加载
@@ -498,6 +708,41 @@
                 }
             });
             layer.close(index);
+        });
+    }
+
+    // ============================================================
+    //  修改密码
+    // ============================================================
+    function showChangePassword() {
+        var html =
+            '<div style="padding:24px 28px;">' +
+            '<div class="layui-form">' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;"><i class="fas fa-lock"></i> 旧密码</label><div class="layui-input-block" style="margin-left:120px;"><input id="cp_old" type="password" class="layui-input" placeholder="请输入旧密码"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;"><i class="fas fa-key"></i> 新密码</label><div class="layui-input-block" style="margin-left:120px;"><input id="cp_new" type="password" class="layui-input" placeholder="请输入新密码"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;"><i class="fas fa-check-double"></i> 确认密码</label><div class="layui-input-block" style="margin-left:120px;"><input id="cp_confirm" type="password" class="layui-input" placeholder="请再次输入新密码"></div></div>' +
+            '</div></div>';
+
+        openLayer('<i class="fas fa-key"></i> 修改密码', html, ['460px', '320px'], function(index) {
+            var oldPwd = document.getElementById('cp_old').value;
+            var newPwd = document.getElementById('cp_new').value;
+            var confirmPwd = document.getElementById('cp_confirm').value;
+            if (!oldPwd) { layer.msg('请输入旧密码', {icon:2}); return; }
+            if (!newPwd) { layer.msg('请输入新密码', {icon:2}); return; }
+            if (newPwd !== confirmPwd) { layer.msg('两次密码不一致', {icon:2}); return; }
+            ajax({
+                url: '/api/auth/changePassword', method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, confirmPassword: confirmPwd }),
+                success: function(res) {
+                    if (res.code === 200) {
+                        layer.close(index);
+                        layer.msg('<i class="fas fa-check-circle"></i> 密码修改成功！', {icon:1, time:2000}, function() {
+                            doLogout();
+                        });
+                    }
+                }
+            });
         });
     }
 

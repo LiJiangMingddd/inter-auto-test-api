@@ -52,7 +52,7 @@
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
                         '<td>' + item.id + '</td>' +
                         '<td><strong>' + escHtml(item.roleName) + '</strong></td>' +
-                        '<td><code style="background:#f5f5f5;padding:2px 8px;border-radius:4px;color:#667eea;">' + escHtml(item.roleCode) + '</code></td>' +
+                        '<td><code style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;color:#82aaff;">' + escHtml(item.roleCode) + '</code></td>' +
                         '<td><small style="color:#999;">' + escHtml(item.roleDesc||'-') + '</small></td>' +
                         '<td>' +
                         '<button class="action-btn edit" onclick="editRole(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
@@ -132,7 +132,7 @@
                         var rolePermIds = (res2.code === 200 && res2.data) ? res2.data : [];
                         perms.forEach(function(p) {
                             var checked = rolePermIds.indexOf(p.id) > -1 ? 'checked' : '';
-                            permCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid #f5f5f5;"><input type="checkbox" name="permChk" value="' + p.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(p.permName) + ' <small>(' + escHtml(p.permCode) + ')</small>"></div>';
+                            permCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><input type="checkbox" name="permChk" value="' + p.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(p.permName) + ' <small>(' + escHtml(p.permCode) + ')</small>"></div>';
                         });
                         if (!perms.length) {
                             permCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无权限，请先创建权限</div>';

@@ -244,24 +244,26 @@
     <style>
         .api-section {
             margin: 24px 0; padding: 20px 24px;
-            background: #fafbfc; border-radius: 10px;
-            border: 1px solid #f0f0f0;
+            background: rgba(255,255,255,0.03); border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
             transition: box-shadow 0.3s;
         }
-        .api-section:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+        .api-section:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.2); }
         .section-title {
-            font-size: 15px; font-weight: 600; color: #1a1a2e;
+            font-size: 15px; font-weight: 600; color: #e0e0f0;
             margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
         }
+        .section-title small { color: #8899b0; font-weight: 400; }
         .api-features { list-style: none; padding: 0; margin: 12px 0; }
         .api-features li {
-            padding: 6px 0; font-size: 14px; color: #444;
+            padding: 6px 0; font-size: 14px; color: #c0c8d8;
             display: flex; align-items: center; gap: 8px;
         }
-        .api-features li code { background: #f0f2ff; color: #667eea; padding: 1px 8px; border-radius: 4px; font-size: 12px; }
+        .api-features li code { background: rgba(102,126,234,0.15); color: #82aaff; padding: 1px 8px; border-radius: 4px; font-size: 12px; }
         .endpoint-box {
             display: inline-flex; align-items: center; gap: 12px;
-            background: #1a1a2e; padding: 10px 20px; border-radius: 8px;
+            background: #0d0d24; padding: 10px 20px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.06);
         }
         .method {
             display: inline-block; padding: 3px 12px; border-radius: 4px;
@@ -274,25 +276,37 @@
         .method.delete { background: #c62828; }
         .endpoint-url { color: #82aaff; font-family: monospace; font-size: 15px; }
         .code-block {
-            background: #f5f7fa; padding: 16px 20px; border-radius: 8px;
+            background: rgba(255,255,255,0.04); padding: 16px 20px; border-radius: 8px;
             font-size: 13px; line-height: 1.7; overflow-x: auto;
-            border: 1px solid #e8e8e8; font-family: "Fira Code", Consolas, monospace;
+            border: 1px solid rgba(255,255,255,0.06); font-family: "Fira Code", Consolas, monospace;
+            color: #c0c8d8;
         }
         .curl-block {
-            background: #1a1a2e; color: #c3e88d;
+            background: #0d0d24; color: #c3e88d;
+            border-color: rgba(255,255,255,0.06);
         }
         .api-steps { padding-left: 20px; margin: 10px 0; }
-        .api-steps li { padding: 4px 0; color: #555; font-size: 14px; }
+        .api-steps li { padding: 4px 0; color: #8899b0; font-size: 14px; }
         .tip-box {
             display: flex; align-items: center; gap: 10px;
-            padding: 12px 16px; background: #fff8e1; border-radius: 8px;
+            padding: 12px 16px; background: rgba(249,168,37,0.1); border-radius: 8px;
             border-left: 4px solid #f9a825; margin-top: 12px;
-            font-size: 13px; color: #555;
+            font-size: 13px; color: #c0c8d8;
         }
         .tip-box.warn {
-            background: #fbe9e7; border-left-color: #e53935;
+            background: rgba(229,57,53,0.1); border-left-color: #e53935;
         }
-        .tip-box code { background: #fff; padding: 1px 6px; border-radius: 3px; }
+        .tip-box code { background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: #82aaff; }
+        .tip-box strong { color: #e0e0f0; }
+        .api-section p { color: #8899b0; }
+        .api-section p strong { color: #e0e0f0; }
+
+        /* 错误码表格暗色 */
+        .api-section table thead tr { background: rgba(255,255,255,0.04) !important; border-bottom: 2px solid #667eea !important; }
+        .api-section table thead th { color: #8899b0 !important; font-weight: 600 !important; padding: 10px 14px !important; }
+        .api-section table tbody td { color: #c0c8d8 !important; padding: 8px 14px !important; border-bottom: 1px solid rgba(255,255,255,0.04) !important; }
+        .api-section table tbody tr:hover td { background: rgba(102,126,234,0.06) !important; }
+
         @media (max-width: 768px) {
             .code-block { font-size: 11px; padding: 12px; }
         }

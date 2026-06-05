@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     数据统计页面碎片（炫酷版）
+     ============================================================ -->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="dashboard-page">
+
+<style>
+/* ---- 统计卡片炫酷风格 ---- */
+.dash-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:24px; }
+.dash-card {
+    position:relative; border-radius:16px; padding:26px 20px 22px;
+    text-align:center; overflow:hidden; isolation:isolate;
+    transition:transform .4s cubic-bezier(.4,0,.2,1), box-shadow .4s ease;
+    cursor:default;
+}
+.dash-card::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(255,255,255,.25) 0%, rgba(255,255,255,.05) 100%);
+    z-index:1; pointer-events:none;
+}
+.dash-card::after {
+    content:''; position:absolute; top:-50%; left:-50%;
+    width:200%; height:200%;
+    background:radial-gradient(circle at 30% 40%, rgba(255,255,255,.15) 0%, transparent 60%);
+    z-index:0; pointer-events:none;
+    transition:opacity .6s;
+}
+.dash-card:hover { transform:translateY(-6px) scale(1.02); box-shadow:0 16px 48px rgba(0,0,0,.18) !important; }
+.dash-card:hover::after { opacity:.6; }
+
+.dash-card .card-bg-icon {
+    position:absolute; right:-10px; bottom:-10px; font-size:80px;
+    opacity:.08; z-index:0; transition:all .5s;
+}
+.dash-card:hover .card-bg-icon { transform:rotate(-8deg) scale(1.1); opacity:.14; }
+
+.dash-card .card-icon {
+    position:relative; z-index:2; display:inline-flex; align-items:center; justify-content:center;
+    width:52px; height:52px; border-radius:14px; font-size:24px; color:#fff;
+    margin-bottom:12px; box-shadow:0 6px 20px rgba(0,0,0,.12);
+    transition:transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.dash-card:hover .card-icon { transform:scale(1.12) rotate(-2deg); }
+
+.dash-card .card-number {
+    position:relative; z-index:2; font-size:32px; font-weight:800;
+    letter-spacing:-0.5px; line-height:1.2; margin-bottom:4px;
+    transition:color .3s;
+}
+.dash-card .card-label {
+    position:relative; z-index:2; font-size:13px; font-weight:500; opacity:.8;
+    letter-spacing:.5px;
+}
+
+/* 各卡片配色 */
+.card-purple { background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; box-shadow:0 8px 28px rgba(102,126,234,.3); }
+.card-green  { background:linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; box-shadow:0 8px 28px rgba(17,153,142,.3); }
+.card-orange { background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:#fff; box-shadow:0 8px 28px rgba(245,87,108,.3); }
+.card-blue   { background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color:#fff; box-shadow:0 8px 28px rgba(79,172,254,.3); }
+
+.card-purple .card-icon { background:rgba(255,255,255,.2); }
+.card-green  .card-icon { background:rgba(255,255,255,.2); }
+.card-orange .card-icon { background:rgba(255,255,255,.2); }
+.card-blue   .card-icon { background:rgba(255,255,255,.2); }
+
+/* ---- 图表容器炫酷风格（暗夜版） ---- */
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.chart-box {
+    background: rgba(255,255,255,0.04); backdrop-filter:blur(12px);
+    border-radius:16px; padding:20px 22px;
+    border:1px solid rgba(255,255,255,0.07);
+    transition:all .4s;
+}
+.chart-box:hover { background: rgba(255,255,255,0.07); transform:translateY(-2px); }
+.chart-box .chart-title {
+    font-size:15px; font-weight:600; color:#e0e0f0; margin-bottom:14px; padding-bottom:12px;
+    border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px;
+}
+.chart-box .chart-title i { color:#667eea; }
+
+/* ---- 数字跳动动画 ---- */
+@keyframes countPop {
+    0% { transform:scale(.6); opacity:0; }
+    60% { transform:scale(1.12); }
+    100% { transform:scale(1); opacity:1; }
+}
+.count-anim { animation:countPop .5s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* ---- 图表入场 ---- */
+@keyframes chartFadeUp {
+    from { opacity:0; transform:translateY(30px); }
+    to { opacity:1; transform:translateY(0); }
+}
+.chart-anim { animation:chartFadeUp .6s ease both; }
+.chart-anim:nth-child(2) { animation-delay:.15s; }
+</style>
+
+<!-- 统计卡片（炫酷渐变） -->
+<div class="dash-grid">
+    <div class="dash-card card-purple">
+        <div class="card-bg-icon"><i class="fas fa-plug"></i></div>
+        <div class="card-icon"><i class="fas fa-plug"></i></div>
+        <div class="card-number" id="statInterfaces">0</div>
+        <div class="card-label">接 口 总 数</div>
+    </div>
+    <div class="dash-card card-green">
+        <div class="card-bg-icon"><i class="fas fa-vial"></i></div>
+        <div class="card-icon"><i class="fas fa-flask"></i></div>
+        <div class="card-number" id="statTestcases">0</div>
+        <div class="card-label">用 例 总 数</div>
+    </div>
+    <div class="dash-card card-orange">
+        <div class="card-bg-icon"><i class="fas fa-users"></i></div>
+        <div class="card-icon"><i class="fas fa-users"></i></div>
+        <div class="card-number" id="statUsers">0</div>
+        <div class="card-label">用 户 总 数</div>
+    </div>
+    <div class="dash-card card-blue">
+        <div class="card-bg-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="card-number" id="statEnabled">0</div>
+        <div class="card-label">启 用 接 口</div>
+    </div>
+</div>
+
+<!-- ECharts 图表 -->
+<div class="chart-grid">
+    <div class="chart-box chart-anim">
+        <div class="chart-title"><i class="fas fa-chart-bar"></i> 各接口用例数量</div>
+        <div id="chartInterface" style="height:300px;"></div>
+    </div>
+    <div class="chart-box chart-anim">
+        <div class="chart-title"><i class="fas fa-chart-pie"></i> 用例环境分布</div>
+        <div id="chartEnv" style="height:300px;"></div>
+    </div>
+</div>
+
+<script>
+function loadDashboard() {
+    ajax({
+        url: '/api/dashboard/stats',
+        success: function(res) {
+            if (res.code !== 200) return;
+            var d = res.data;
+
+            // 炫酷数字跳动效果
+            animateNumber('statInterfaces', d.totalInterfaces || 0);
+            animateNumber('statTestcases', d.totalTestcases || 0);
+            animateNumber('statUsers', d.totalUsers || 0);
+            animateNumber('statEnabled', d.enabledInterfaces || 0);
+
+            // 渲染图表
+            if (typeof echarts !== 'undefined') {
+                // ====== 柱状图：各接口用例数（炫酷版） ======
+                var chart1 = echarts.init(document.getElementById('chartInterface'));
+                chart1.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        backgroundColor: 'rgba(255,255,255,.92)',
+                        borderColor: '#667eea',
+                        borderWidth: 1,
+                        textStyle: { color: '#333', fontSize: 12 }
+                    },
+                    grid: { left: 45, right: 20, top: 25, bottom: 50 },
+                    xAxis: {
+                        type: 'category',
+                        data: d.chartNames || [],
+                        axisLabel: { rotate: 22, fontSize: 11, interval: 0, color: '#999' },
+                        axisLine: { lineStyle: { color: '#eee' } },
+                        axisTick: { show: false }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        minInterval: 1,
+                        splitLine: { lineStyle: { color: '#f5f5f5', type: 'dashed' } },
+                        axisLabel: { color: '#999' }
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: d.chartCounts || [],
+                        barMaxWidth: 38,
+                        itemStyle: {
+                            borderRadius: [6,6,0,0],
+                            color: {
+                                type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#667eea' },
+                                    { offset: 1, color: '#764ba2' }
+                                ]
+                            }
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                color: {
+                                    type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                                    colorStops: [
+                                        { offset: 0, color: '#7b93f5' },
+                                        { offset: 1, color: '#8b5cf6' }
+                                    ]
+                                }
+                            }
+                        },
+                        animationDuration: 800,
+                        animationEasing: 'cubicOut'
+                    }]
+                });
+
+                // ====== 饼图：环境分布（炫酷版） ======
+                var chart2 = echarts.init(document.getElementById('chartEnv'));
+                chart2.setOption({
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}: {c} ({d}%)',
+                        backgroundColor: 'rgba(255,255,255,.92)',
+                        borderColor: '#667eea',
+                        borderWidth: 1,
+                        textStyle: { color: '#333' }
+                    },
+                    legend: {
+                        bottom: 8,
+                        textStyle: { color: '#999', fontSize: 12 },
+                        itemWidth: 12,
+                        itemHeight: 12
+                    },
+                    series: [{
+                        type: 'pie',
+                        radius: ['38%', '62%'],
+                        center: ['50%', '44%'],
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{d}%',
+                            fontSize: 12,
+                            color: '#666'
+                        },
+                        labelLine: { length: 12, length2: 14, smooth: true },
+                        emphasis: {
+                            label: { fontSize: 14, fontWeight: 'bold' },
+                            itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0,0,0,.15)' }
+                        },
+                        data: [
+                            { value: d.envDev || 0, name: 'DEV',
+                              itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#4facfe'},{offset:1,color:'#00f2fe'}]) } },
+                            { value: d.envUat || 0, name: 'UAT',
+                              itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#f093fb'},{offset:1,color:'#f5576c'}]) } },
+                            { value: d.envPro || 0, name: 'PRO',
+                              itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#11998e'},{offset:1,color:'#38ef7d'}]) } }
+                        ],
+                        animationDuration: 800,
+                        animationEasing: 'cubicOut'
+                    }]
+                });
+
+                // 自适应（单例模式：防止重复注册 resize 监听）
+                if (!window._dashChartsResized) {
+                    window._dashChartsResized = true;
+                    var resizeTimer;
+                    window.addEventListener('resize', function() {
+                        clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(function() {
+                            if (typeof chart1 !== 'undefined' && chart1) chart1.resize();
+                            if (typeof chart2 !== 'undefined' && chart2) chart2.resize();
+                        }, 150);
+                    });
+                }
+            }
+        }
+    });
+}
+
+/**
+ * 数字跳动动画——从0滚动到目标值
+ */
+function animateNumber(elemId, target) {
+    var el = document.getElementById(elemId);
+    if (!el) return;
+    var start = 0, duration = 900, startTime = null;
+    el.classList.remove('count-anim');
+
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        // easeOutExpo 缓出效果
+        var eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        var current = Math.round(start + (target - start) * eased);
+        el.textContent = current;
+        if (progress < 1) requestAnimationFrame(step);
+        else { el.textContent = target; el.classList.add('count-anim'); }
+    }
+    requestAnimationFrame(step);
+}
+</script>
+</div>
+</body>
+</html>
