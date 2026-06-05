@@ -1,6 +1,7 @@
 package com.lm.interautotestapi.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -10,6 +11,8 @@ import com.lm.interautotestapi.service.SysUserService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -41,15 +44,33 @@ public class SysUserController {
 
     @PostMapping
     @SaCheckPermission("user:manage")
-    public Result<Void> save(@RequestBody SysUser user) {
+    public Result<Map<String, String>> save(@RequestBody SysUser user) {
+        // 自动生成 appId（如：APP_3E8F2C1A...）
+        if (user.getAppId() == null || user.getAppId().isEmpty()) {
+            user.setAppId("APP_" + IdUtil.simpleUUID().toUpperCase());
+        }
+        // 自动生成 appKey（32位随机无规则字符串），仅创建时返回明文一次
+        String rawAppKey = null;
+        if (user.getAppKey() == null || user.getAppKey().isEmpty()) {
+            rawAppKey = IdUtil.simpleUUID().toUpperCase() + IdUtil.fastSimpleUUID().toUpperCase();
+            user.setAppKey(SecureUtil.md5(rawAppKey));
+        } else {
+            user.setAppKey(SecureUtil.md5(user.getAppKey()));
+        }
+        // 密码 MD5
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(SecureUtil.md5(user.getPassword()));
         }
-        if (user.getAppKey() != null && !user.getAppKey().isEmpty()) {
-            user.setAppKey(SecureUtil.md5(user.getAppKey()));
-        }
         sysUserService.save(user);
-        return Result.ok();
+
+        // 返回生成的 appId 和 appKey（appKey 仅此一次）
+        Map<String, String> result = new HashMap<>();
+        result.put("id", user.getId().toString());
+        result.put("appId", user.getAppId());
+        if (rawAppKey != null) {
+            result.put("appKey", rawAppKey);
+        }
+        return Result.ok(result);
     }
 
     @PutMapping

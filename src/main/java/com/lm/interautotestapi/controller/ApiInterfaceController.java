@@ -5,7 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.ApiInterface;
+import com.lm.interautotestapi.entity.ApiTestcase;
 import com.lm.interautotestapi.service.ApiInterfaceService;
+import com.lm.interautotestapi.service.ApiTestcaseService;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -16,6 +19,9 @@ public class ApiInterfaceController {
 
     @Resource
     private ApiInterfaceService apiInterfaceService;
+
+    @Resource
+    private ApiTestcaseService apiTestcaseService;
 
     @GetMapping("/page")
     @SaCheckPermission("api:manage")
@@ -54,7 +60,10 @@ public class ApiInterfaceController {
 
     @DeleteMapping("/{id}")
     @SaCheckPermission("api:manage")
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> delete(@PathVariable Long id) {
+        // 级联删除关联的测试用例
+        apiTestcaseService.remove(new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getInterfaceId, id));
         apiInterfaceService.removeById(id);
         return Result.ok();
     }

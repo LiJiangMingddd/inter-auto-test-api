@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS api_testcase (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     interface_id BIGINT NOT NULL COMMENT '关联接口ID',
     case_title VARCHAR(200) NOT NULL COMMENT '用例标题',
-    case_data TEXT NOT NULL COMMENT '请求数据(JSON格式)',
-    check_rules TEXT NOT NULL COMMENT '断言规则(JSON数组格式)',
-    expected_results TEXT NOT NULL COMMENT '期望结果(JSON数组格式)',
+    case_data TEXT COMMENT '请求数据(JSON格式)',
+    check_rules TEXT COMMENT '断言规则(JSON数组格式)',
+    expected_results TEXT COMMENT '期望结果(JSON数组格式)',
     env VARCHAR(10) NOT NULL COMMENT '适用环境(dev/uat/pro)',
     enabled TINYINT(1) DEFAULT 1 COMMENT '是否启用',
     sort_order INT DEFAULT 0 COMMENT '排序号',
@@ -110,9 +110,12 @@ INSERT INTO sys_permission (perm_name, perm_code, perm_url, parent_id) VALUES ('
 INSERT INTO sys_permission (perm_name, perm_code, perm_url, parent_id) VALUES ('角色管理', 'role:manage', '/api/role/**', 0);
 INSERT INTO sys_permission (perm_name, perm_code, perm_url, parent_id) VALUES ('权限管理', 'perm:manage', '/api/permission/**', 0);
 
-INSERT INTO sys_role_permission (role_id, perm_id) SELECT r.id, p.id FROM sys_role r, sys_permission p WHERE r.role_code = 'admin';
-
-INSERT INTO sys_user_role (user_id, role_id) SELECT u.id, r.id FROM sys_user u, sys_role r WHERE u.username = 'admin' AND r.role_code = 'admin';
-
+-- 注意：必须先插入用户，再分配角色（sys_user_role 依赖于 sys_user）
 INSERT INTO sys_user (username, password, nickname, email, app_id, app_key, status)
 VALUES ('admin', '0192023a7bbd73250516f069df18b500', '超级管理员', 'admin@example.com', 'ADMIN_APP', '0192023a7bbd73250516f069df18b500', 1);
+
+-- 为 admin 用户分配所有权限（通过 admin 角色）
+INSERT INTO sys_role_permission (role_id, perm_id) SELECT r.id, p.id FROM sys_role r, sys_permission p WHERE r.role_code = 'admin';
+
+-- 将 admin 用户关联到 admin 角色
+INSERT INTO sys_user_role (user_id, role_id) SELECT u.id, r.id FROM sys_user u, sys_role r WHERE u.username = 'admin' AND r.role_code = 'admin';

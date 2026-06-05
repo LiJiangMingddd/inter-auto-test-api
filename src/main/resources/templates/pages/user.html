@@ -81,11 +81,10 @@
     /** 打开新增/编辑用户弹窗 */
     function showUserForm(data) {
         var isEdit = !!data;
-        var title = isEdit ? '编辑用户' : '新增用户';
+        var title = isEdit ? '编辑用户' : '<i class="fas fa-user-plus"></i> 新增用户';
         var d = data || {};
 
         var pwdPlaceholder = isEdit ? '留空则不修改密码' : '请输入密码';
-        var keyPlaceholder = isEdit ? '留空则不修改AppKey' : '请输入AppKey';
 
         var html =
             '<div style="padding:24px 28px;">' +
@@ -95,12 +94,12 @@
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-smile"></i> 昵称</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_nickname" class="layui-input" value="' + escHtml(d.nickname||'') + '"></div></div>' +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-envelope"></i> 邮箱</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_email" class="layui-input" value="' + escHtml(d.email||'') + '"></div></div>' +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-phone"></i> 手机</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_phone" class="layui-input" value="' + escHtml(d.phone||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-key"></i> AppID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_appId" class="layui-input" value="' + escHtml(d.appId||'') + '"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-lock"></i> AppKey</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_appKey" type="password" class="layui-input" placeholder="' + keyPlaceholder + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-key"></i> AppID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_appId" class="layui-input" value="' + escHtml(d.appId||'') + '" ' + (!isEdit?'placeholder="自动生成"':'') + '></div></div>' +
+            (isEdit ? '' : '<div class="layui-form-item" style="padding:8px 0 4px 110px;color:#f9a825;font-size:12px;"><i class="fas fa-info-circle"></i> 新增用户后将自动生成 AppID 和 AppKey，请复制保存</div>') +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_user_status" class="layui-input"><option value="1"' + (d.status!==0?'selected':'') + '>启用</option><option value="0"' + (d.status===0?'selected':'') + '>禁用</option></select></div></div>' +
             '</div></div>';
 
-        openLayer(title, html, ['520px', '480px'], function(index) {
+        openLayer(title, html, ['520px', '420px'], function(index) {
             var obj = {
                 username: document.getElementById('f_user_username').value,
                 nickname: document.getElementById('f_user_nickname').value,
@@ -110,16 +109,40 @@
                 status: parseInt(document.getElementById('f_user_status').value)
             };
             var pwd = document.getElementById('f_user_password').value;
-            var appKey = document.getElementById('f_user_appKey').value;
             if (pwd) obj.password = pwd;
-            if (appKey) obj.appKey = appKey;
             if (isEdit) obj.id = d.id;
             ajax({
                 url: '/api/user', method: isEdit ? 'PUT' : 'POST',
                 contentType: 'application/json', data: JSON.stringify(obj),
                 success: function(res) {
-                    if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadUser(1); }
-                    else { layer.msg(res.msg, {icon:2}); }
+                    if (res.code === 200) {
+                        layer.close(index);
+                        // 新增时展示自动生成的 appId 和 appKey
+                        if (!isEdit && res.data && res.data.appKey) {
+                            var keyHtml = '<div style="padding:24px 28px;text-align:center;">' +
+                                '<div style="font-size:48px;color:#2e7d32;margin-bottom:12px;"><i class="fas fa-check-circle"></i></div>' +
+                                '<h3 style="margin-bottom:16px;color:#1a1a2e;">用户创建成功！</h3>' +
+                                '<div style="background:#f5f7fa;border-radius:8px;padding:16px;text-align:left;margin-bottom:16px;">' +
+                                '<p style="margin:6px 0;font-size:13px;color:#666;"><strong>AppID：</strong></p>' +
+                                '<p style="margin:6px 0;font-size:14px;color:#1a1a2e;word-break:break-all;font-family:monospace;" id="genAppId">' + escHtml(res.data.appId) + '</p>' +
+                                '<p style="margin:12px 0 6px;font-size:13px;color:#666;"><strong>AppKey：</strong><span style="color:#e53935;font-weight:600;">（仅显示一次，请立即复制保存！）</span></p>' +
+                                '<p style="margin:6px 0;font-size:14px;color:#1a1a2e;word-break:break-all;font-family:monospace;background:#fff8e1;padding:8px 12px;border-radius:4px;border:1px solid #ffe082;" id="genAppKey">' + escHtml(res.data.appKey) + '</p>' +
+                                '</div>' +
+                                '<div style="display:flex;gap:12px;justify-content:center;">' +
+                                '<button class="layui-btn layui-btn-sm layui-btn-primary" onclick="var t=document.getElementById(\'genAppId\');navigator.clipboard.writeText(t.textContent);layer.msg(\'AppID 已复制\',{icon:1,time:1500});"><i class="fas fa-copy"></i> 复制 AppID</button>' +
+                                '<button class="layui-btn layui-btn-sm" onclick="var t=document.getElementById(\'genAppKey\');navigator.clipboard.writeText(t.textContent);layer.msg(\'AppKey 已复制\',{icon:1,time:1500});"><i class="fas fa-copy"></i> 复制 AppKey</button>' +
+                                '</div></div>';
+                            layer.open({
+                                type: 1, title: '<i class="fas fa-key"></i> 凭据信息',
+                                area: ['480px', '380px'], content: keyHtml,
+                                btn: ['我知道了'],
+                                yes: function(idx) { layer.close(idx); loadUser(1); }
+                            });
+                        } else {
+                            layer.msg('保存成功！', {icon:1});
+                            loadUser(1);
+                        }
+                    } else { layer.msg(res.msg, {icon:2}); }
                 }
             });
         });

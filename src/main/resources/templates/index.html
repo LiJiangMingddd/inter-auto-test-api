@@ -300,6 +300,24 @@
                     <i class="fas fa-vial"></i><span>用例管理</span>
                 </div>
             </div>
+            <!-- 开放接口 -->
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 开放接口
+                </div>
+                <div class="nav-item" data-tab="open-api" onclick="switchTab('open-api')">
+                    <i class="fas fa-book-open"></i><span>Open API 文档</span>
+                </div>
+            </div>
+            <!-- 项目文档 -->
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 项目文档
+                </div>
+                <div class="nav-item" data-tab="readme" onclick="switchTab('readme')">
+                    <i class="fas fa-file-alt"></i><span>项目文档（README）</span>
+                </div>
+            </div>
             <!-- 系统管理 -->
             <div class="nav-section">
                 <div class="nav-section-title">
@@ -338,6 +356,12 @@
 
         <!-- 内容区 - 使用 th:insert 加载各页面碎片 -->
         <div class="content-area">
+
+            <!-- Open API 文档 -->
+            <div class="page-panel" id="panel-open-api" th:insert="pages/open-api :: open-api-page"></div>
+
+            <!-- 项目文档 -->
+            <div class="page-panel" id="panel-readme" th:insert="pages/readme :: readme-page"></div>
 
             <!-- 接口管理 -->
             <div class="page-panel active" id="panel-interface" th:insert="pages/interface :: interface-page"></div>
@@ -380,10 +404,11 @@
         if (!options.headers) options.headers = {};
         options.headers['Authorization'] = token;
 
-        // 保存原始 success 回调
+        // 保存原始回调
         var originalSuccess = options.success;
+        var originalError = options.error;
 
-        // 注入统一的 error 处理
+        // 注入统一的 error 处理（保留原始 error 回调）
         options.error = function(xhr) {
             var msg = '请求失败';
             try {
@@ -392,11 +417,16 @@
             } catch(e) {
                 msg = '网络异常 (' + xhr.status + ')';
             }
-            // 如果 layer 已初始化，用 layer.msg 显示
-            if (typeof layer !== 'undefined' && layer.msg) {
-                layer.msg('<i class=\"fas fa-exclamation-circle\"></i> ' + msg, {icon: 2, time: 3000});
+            // 调用原始 error 回调（如 readme.html 的错误显示）
+            if (typeof originalError === 'function') {
+                originalError(xhr);
             } else {
-                alert(msg);
+                // 没有自定义 error 时才弹出 toast
+                if (typeof layer !== 'undefined' && layer.msg) {
+                    layer.msg('<i class=\"fas fa-exclamation-circle\"></i> ' + msg, {icon: 2, time: 3000});
+                } else {
+                    alert(msg);
+                }
             }
         };
 
@@ -435,12 +465,23 @@
             testcase: '<i class="fas fa-vial"></i> 用例管理',
             user: '<i class="fas fa-users"></i> 用户管理',
             role: '<i class="fas fa-user-tag"></i> 角色管理',
-            permission: '<i class="fas fa-shield-halved"></i> 权限管理'
+            permission: '<i class="fas fa-shield-halved"></i> 权限管理',
+            'open-api': '<i class="fas fa-book-open"></i> Open API 文档',
+            readme: '<i class="fas fa-file-alt"></i> 项目文档（README）'
         };
         document.getElementById('pageTitle').innerHTML = titles[tab] || tab;
         // 触发对应页面数据加载
-        var loaders = { interface: loadInterface, testcase: loadTestcase, user: loadUser, role: loadRole, permission: loadPermission };
-        if (loaders[tab]) loaders[tab](1);
+        var loaders = { interface: loadInterface, testcase: loadTestcase, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme' };
+        if (loaders[tab]) {
+            if (loaders[tab] === 'readme') {
+                // readme 面板切换时由 readme.html 内部脚本自动加载
+                setTimeout(function() {
+                    if (typeof refreshReadme === 'function') refreshReadme();
+                }, 200);
+            } else {
+                loaders[tab](1);
+            }
+        }
     }
 
     // ============================================================

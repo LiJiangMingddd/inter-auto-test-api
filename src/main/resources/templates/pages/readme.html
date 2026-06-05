@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="readme-page">
+    <div class="card readme-card">
+        <div class="card-header">
+            <h3><i class="fas fa-file-alt" style="color:#667eea;"></i> 项目文档（README）</h3>
+            <div class="toolbar">
+                <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="refreshReadme()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+        </div>
+        <div class="readme-body" id="readmeBody">
+            <div class="readme-loading" id="readmeLoading">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                </div>
+                <p class="loading-text">正在加载文档...</p>
+                <p class="loading-hint">首次加载可能需要几秒钟</p>
+            </div>
+            <div class="readme-content markdown-body" id="readmeContent" style="display:none;"></div>
+            <div class="readme-error" id="readmeError" style="display:none;">
+                <i class="fas fa-exclamation-circle error-icon"></i>
+                <p class="error-text" id="readmeErrorText">加载文档失败</p>
+                <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="refreshReadme()">
+                    <i class="fas fa-redo"></i> 重试
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- marked.js CDN（Markdown 渲染引擎） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <script>
+    /**
+     * 加载并渲染 README.md
+     * 实时读取项目目录下的 README.md，修改后刷新即可看到变化
+     */
+    function refreshReadme() {
+        var loading = document.getElementById('readmeLoading');
+        var content = document.getElementById('readmeContent');
+        var error = document.getElementById('readmeError');
+
+        // 显示加载状态
+        loading.style.display = 'block';
+        content.style.display = 'none';
+        error.style.display = 'none';
+        loading.querySelector('.loading-text').textContent = '正在加载文档...';
+
+        ajax({
+            url: '/api/readme',
+            success: function(res) {
+                if (res.code === 200 && res.data) {
+                    try {
+                        // 确保 marked 已加载
+                        if (typeof marked === 'undefined') {
+                            showError('Markdown 解析库加载失败，请检查网络连接');
+                            return;
+                        }
+                        var html = marked.parse(res.data);
+                        content.innerHTML = html;
+                        // 渐入动画
+                        loading.style.display = 'none';
+                        content.style.display = 'block';
+                        content.style.animation = 'readmeFadeIn 0.5s ease';
+                    } catch(e) {
+                        showError('Markdown 渲染失败：' + e.message);
+                    }
+                } else {
+                    showError(res.msg || '加载文档失败');
+                }
+            },
+            error: function(xhr) {
+                showError('网络异常，无法加载文档 (HTTP ' + (xhr.status || '未知') + ')');
+            }
+        });
+    }
+
+    /** 显示错误状态 */
+    function showError(msg) {
+        var loading = document.getElementById('readmeLoading');
+        var content = document.getElementById('readmeContent');
+        var error = document.getElementById('readmeError');
+        loading.style.display = 'none';
+        content.style.display = 'none';
+        error.style.display = 'block';
+        document.getElementById('readmeErrorText').textContent = msg || '加载文档失败';
+    }
+
+    // 页面加载完成和面板切换时自动加载
+    document.addEventListener('DOMContentLoaded', function() {
+        // 等待 marked CDN 加载完成
+        var waitMarked = setInterval(function() {
+            if (typeof marked !== 'undefined') {
+                clearInterval(waitMarked);
+                var panel = document.getElementById('panel-readme');
+                if (panel && panel.classList.contains('active')) {
+                    setTimeout(refreshReadme, 100);
+                }
+            }
+        }, 100);
+        // 10 秒超时
+        setTimeout(function() { clearInterval(waitMarked); }, 10000);
+    });
+
+    // 如果 DOM 已就绪，立即执行
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        var waitMarked2 = setInterval(function() {
+            if (typeof marked !== 'undefined') {
+                clearInterval(waitMarked2);
+                var panel = document.getElementById('panel-readme');
+                if (panel && panel.classList.contains('active')) {
+                    setTimeout(refreshReadme, 100);
+                }
+            }
+        }, 100);
+        setTimeout(function() { clearInterval(waitMarked2); }, 10000);
+    }
+    </script>
+
+    <style>
+    /* 卡片样式 */
+    .readme-card {
+        min-height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+    }
+    .readme-card .readme-body {
+        flex: 1;
+        padding: 0;
+        position: relative;
+        overflow-y: auto;
+    }
+    .readme-card .readme-content {
+        padding: 28px 32px;
+    }
+
+    /* 加载动画 */
+    .readme-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+    }
+    .loading-spinner {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        margin-bottom: 20px;
+    }
+    .spinner-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4px solid transparent;
+        border-top-color: #667eea;
+        border-right-color: #764ba2;
+        animation: readmeSpin 0.8s linear infinite;
+    }
+    .spinner-ring::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        border-bottom-color: #667eea;
+        border-left-color: #764ba2;
+        animation: readmeSpin 1.2s linear infinite reverse;
+    }
+    @keyframes readmeSpin {
+        to { transform: rotate(360deg); }
+    }
+    @keyframes readmeFadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .loading-text {
+        font-size: 16px;
+        color: #667eea;
+        font-weight: 500;
+        margin: 0 0 6px;
+    }
+    .loading-hint {
+        font-size: 12px;
+        color: #aaa;
+        margin: 0;
+    }
+
+    /* 错误状态 */
+    .readme-error {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+    }
+    .readme-error .error-icon {
+        font-size: 48px;
+        color: #e53935;
+        margin-bottom: 16px;
+        animation: readmeShake 0.5s ease;
+    }
+    @keyframes readmeShake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-8px); }
+        40% { transform: translateX(8px); }
+        60% { transform: translateX(-5px); }
+        80% { transform: translateX(5px); }
+    }
+    .readme-error .error-text {
+        font-size: 15px;
+        color: #888;
+        margin: 0 0 20px;
+        max-width: 400px;
+        line-height: 1.5;
+    }
+
+    /* 文档内容样式 - 增强 GitHub 风格 */
+    .markdown-body {
+        font-family: -apple-system, "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+        font-size: 15px;
+        line-height: 1.8;
+        color: #24292e;
+        word-wrap: break-word;
+    }
+    .markdown-body h1 {
+        font-size: 1.9em;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: .3em;
+        margin: 1.2em 0 .6em;
+        color: #1a1a2e;
+    }
+    .markdown-body h2 {
+        font-size: 1.5em;
+        border-bottom: 1px solid #eaecef;
+        padding-bottom: .3em;
+        margin: 1.2em 0 .5em;
+        color: #1a1a2e;
+    }
+    .markdown-body h3 {
+        font-size: 1.2em;
+        margin: 1em 0 .5em;
+        color: #2c3e50;
+    }
+    .markdown-body h4 {
+        font-size: 1em;
+        margin: 1em 0 .5em;
+        color: #34495e;
+    }
+    .markdown-body p {
+        margin: .6em 0;
+    }
+    .markdown-body ul, .markdown-body ol {
+        padding-left: 2em;
+        margin: .5em 0;
+    }
+    .markdown-body li {
+        margin: .3em 0;
+    }
+    .markdown-body code {
+        background: #f0f2ff;
+        color: #667eea;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: "Fira Code", Consolas, "Courier New", monospace;
+    }
+    .markdown-body pre {
+        background: #f5f7fa;
+        border: 1px solid #e8e8e8;
+        border-radius: 8px;
+        padding: 16px 20px;
+        overflow-x: auto;
+        margin: .8em 0;
+        position: relative;
+        transition: box-shadow 0.2s;
+    }
+    .markdown-body pre:hover {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .markdown-body pre code {
+        background: none;
+        color: #333;
+        padding: 0;
+        border-radius: 0;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    .markdown-body blockquote {
+        border-left: 4px solid #667eea;
+        padding: .5em 1em;
+        margin: .8em 0;
+        background: #f8f9ff;
+        color: #555;
+        border-radius: 0 6px 6px 0;
+    }
+    .markdown-body table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: .8em 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        transition: box-shadow 0.2s;
+    }
+    .markdown-body table:hover {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .markdown-body table th, .markdown-body table td {
+        border: 1px solid #dfe2e5;
+        padding: 10px 14px;
+        text-align: left;
+    }
+    .markdown-body table th {
+        background: #667eea;
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .markdown-body table tr:nth-child(even) {
+        background: #fafbfc;
+    }
+    .markdown-body table tr:hover td {
+        background: #f0f2ff;
+    }
+    .markdown-body hr {
+        border: none;
+        border-top: 2px solid #667eea;
+        margin: 1.8em 0;
+        opacity: 0.3;
+    }
+    .markdown-body strong {
+        font-weight: 600;
+        color: #1a1a2e;
+    }
+    .markdown-body a {
+        color: #667eea;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .markdown-body a:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+    .markdown-body img {
+        max-width: 100%;
+        border-radius: 6px;
+    }
+    .markdown-body .hljs {
+        background: transparent;
+    }
+    .markdown-body input[type="checkbox"] {
+        margin-right: 6px;
+    }
+    </style>
+</div>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="open-api-page">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-book-open"></i> Open API 文档</h3>
+            <div class="toolbar">
+                <a href="/doc.html" target="_blank" class="layui-btn layui-btn-sm layui-btn-primary">
+                    <i class="fas fa-external-link-alt"></i> 查看 Knife4j 文档
+                </a>
+            </div>
+        </div>
+
+        <!-- === 接口概述 === -->
+        <div class="api-section">
+            <h4 class="section-title"><i class="fas fa-info-circle" style="color:#667eea;"></i> 接口概述</h4>
+            <p>本接口用于 <strong>Agent 或其他外部系统</strong> 批量将接口定义及测试用例导入到接口中台。采用 <strong>两条腿</strong> 的认证方式：</p>
+            <ul class="api-features">
+                <li><i class="fas fa-check-circle" style="color:#2e7d32;"></i> <strong>Step 1</strong> — 使用 <code>appId + appKey</code> 换取 Sa-Token</li>
+                <li><i class="fas fa-check-circle" style="color:#2e7d32;"></i> <strong>Step 2</strong> — 在请求头携带 <code>Authorization: token</code> 调用批量导入接口</li>
+                <li><i class="fas fa-check-circle" style="color:#2e7d32;"></i> 支持事务性提交：单个接口失败不影响其他接口</li>
+                <li><i class="fas fa-check-circle" style="color:#2e7d32;"></i> 返回详细的成功/失败统计</li>
+            </ul>
+        </div>
+
+        <!-- === 认证方式详解 === -->
+        <div class="api-section">
+            <h4 class="section-title"><i class="fas fa-shield-alt" style="color:#667eea;"></i> 认证方式（两步获取）</h4>
+
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:10px;padding:20px;margin-bottom:16px;color:#fff;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <span style="background:rgba(255,255,255,0.2);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">1</span>
+                    <span style="font-size:16px;font-weight:600;">获取 AppID 和 AppKey</span>
+                </div>
+                <p style="margin:4px 0 0 44px;font-size:14px;opacity:0.9;">在「系统管理 → 用户管理」中新增用户，系统 <strong>自动生成</strong> 无规则随机字符串作为 AppID 和 AppKey。AppKey <strong style="color:#ffd54f;">仅在创建时展示一次</strong>，请立即复制保存！</p>
+            </div>
+
+            <div style="background:linear-gradient(135deg,#2e7d32,#43a047);border-radius:10px;padding:20px;margin-bottom:16px;color:#fff;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <span style="background:rgba(255,255,255,0.2);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">2</span>
+                    <span style="font-size:16px;font-weight:600;">调用 /api/auth/getToken 获取 Token</span>
+                </div>
+                <p style="margin:4px 0 0 44px;font-size:14px;opacity:0.9;">传入 appId + appKey，获取 Sa-Token。后续所有 API 调用在 <code>Authorization</code> 请求头中携带此 token。</p>
+            </div>
+
+            <div style="background:linear-gradient(135deg,#e65100,#ff8f00);border-radius:10px;padding:20px;color:#fff;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <span style="background:rgba(255,255,255,0.2);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">3</span>
+                    <span style="font-size:16px;font-weight:600;">调用 /api/open/batch-import 批量导入</span>
+                </div>
+                <p style="margin:4px 0 0 44px;font-size:14px;opacity:0.9;">在请求头 <code>Authorization: {token}</code> 中携带 token，请求体中传入接口和用例数据。</p>
+            </div>
+        </div>
+
+        <!-- === Step 1: 获取 Token === -->
+        <div class="api-section">
+            <h4 class="section-title"><i class="fas fa-key" style="color:#667eea;"></i> Step 1：获取 Token 接口</h4>
+            <div class="endpoint-box">
+                <span class="method post">POST</span>
+                <span class="endpoint-url">/api/auth/getToken</span>
+            </div>
+            <p style="margin-top:8px;color:#999;font-size:13px;">Content-Type: <code>application/json; charset=utf-8</code> <span style="margin-left:12px;">（无需 token，开放接口）</span></p>
+
+            <p style="margin-top:16px;"><strong>请求体：</strong></p>
+            <pre class="code-block">{
+  "appId":  "APP_3E8F2C1A...",  // 必填 - 用户管理中自动生成的 AppID
+  "appKey": "6F8E..."            // 必填 - 用户管理中自动生成的 AppKey（明文）
+}</pre>
+
+            <p style="margin-top:12px;"><strong>响应示例：</strong></p>
+            <pre class="code-block">{
+  "code": 200,
+  "msg":  "success",
+  "data": {
+    "token":  "f26a3e2c-8b1d-4f5e-9c7a-3d8e2f1a6b4c",  // Sa-Token 访问令牌
+    "expire": 86400                                     // 有效期（秒），默认 24 小时
+  }
+}</pre>
+
+            <p style="margin-top:12px;"><strong>Curl 示例：</strong></p>
+            <pre class="code-block curl-block">curl -X POST http://localhost:8849/api/auth/getToken \
+  -H "Content-Type: application/json" \
+  -d '{"appId": "APP_3E8F2C1A...", "appKey": "6F8E..."}'</pre>
+
+            <div class="tip-box warn">
+                <i class="fas fa-exclamation-triangle" style="color:#e65100;"></i>
+                <span><strong>注意：</strong>token 有效期为 24 小时，过期后需重新调用本接口获取。如果用户被禁用，token 将立即失效。</span>
+            </div>
+        </div>
+
+        <!-- === Step 2: 批量导入 === -->
+        <div class="api-section">
+            <h4 class="section-title"><i class="fas fa-exchange-alt" style="color:#667eea;"></i> Step 2：批量导入接口</h4>
+            <div class="endpoint-box">
+                <span class="method post">POST</span>
+                <span class="endpoint-url">/api/open/batch-import</span>
+            </div>
+            <p style="margin-top:8px;color:#999;font-size:13px;">
+                Content-Type: <code>application/json; charset=utf-8</code>
+                <span style="margin-left:12px;">请求头：<code>Authorization: {token}</code></span>
+            </p>
+
+            <p style="margin-top:16px;"><strong>请求体结构：</strong></p>
+            <pre class="code-block">{
+  "interfaces": [   // 必填 - 接口列表（最少 1 条）
+    {
+      "apiName":      "接口名称",            // 必填 - 接口名称
+      "apiInfo":      "接口描述",            // 可选 - 功能描述
+      "method":       "POST",               // 必填 - GET/POST/PUT/DELETE/PATCH
+      "urlDev":       "http://dev...",       // 可选 - 开发环境地址
+      "urlUat":       "http://uat...",       // 可选 - 测试环境地址
+      "urlPro":       "http://pro...",       // 可选 - 生产环境地址
+      "serviceCode":  "user-service",       // 可选 - 所属服务编码
+      "enabled":      1,                     // 可选 - 默认 1（启用），0 禁用
+      "testcases": [                         // 可选 - 关联测试用例
+        {
+          "caseTitle":        "用例标题",             // 必填
+          "caseData":         "{\"userId\": 1}",     // 可选 - 请求数据
+          "checkRules":       "$.code == 200",       // 可选 - 断言规则
+          "expectedResults":  "{\"code\":200}",      // 可选 - 期望结果
+          "env":              "uat",                  // 可选 - dev/uat/pro
+          "enabled":          1,                      // 可选
+          "sortOrder":        1                       // 可选 - 排序序号
+        }
+      ]
+    }
+  ]
+}</pre>
+
+            <p style="margin-top:12px;"><strong>响应示例：</strong></p>
+            <pre class="code-block">{
+  "code": 200,
+  "msg":  "success",
+  "data": {
+    "success":         true,    // 是否全部成功
+    "interfaceSuccess": 2,      // 成功接口数
+    "interfaceFailed":  0,      // 失败接口数
+    "testcaseSuccess":  3,      // 成功用例数
+    "testcaseFailed":   0,      // 失败用例数
+    "errors": []                // 失败详情（空数组=全部成功）
+  }
+}</pre>
+
+            <div class="tip-box">
+                <i class="fas fa-lightbulb" style="color:#f9a825;"></i>
+                <span><strong>提示：</strong>如果部分接口导入失败，<code>errors</code> 数组会包含每条失败的具体原因。事务性保证：成功的不回滚，失败的不提交。</span>
+            </div>
+        </div>
+
+        <!-- === 完整调用流程 === -->
+        <div class="api-section">
+            <h4 class="section-title"><i class="fas fa-terminal" style="color:#667eea;"></i> 完整 Curl 调用流程</h4>
+            <p style="margin-bottom:10px;">以下示例展示完整的 <strong>两步流程</strong>：</p>
+
+            <p><strong>第一步：获取 Token</strong></p>
+            <pre class="code-block curl-block">TOKEN=$(curl -s -X POST http://localhost:8849/api/auth/getToken \
+  -H "Content-Type: application/json" \
+  -d '{"appId": "你的AppID", "appKey": "你的AppKey"}' | jq -r '.data.token')</pre>
+
+            <p style="margin-top:12px;"><strong>第二步：批量导入接口</strong></p>
+            <pre class="code-block curl-block">curl -X POST http://localhost:8849/api/open/batch-import \
+  -H "Content-Type: application/json" \
+  -H "Authorization: $TOKEN" \
+  -d '{
+  "interfaces": [
+    {
+      "apiName": "获取用户信息",
+      "method": "GET",
+      "urlDev": "http://dev-api.example.com/user/info",
+      "urlUat": "http://uat-api.example.com/user/info",
+      "urlPro": "http://api.example.com/user/info",
+      "serviceCode": "user-service",
+      "testcases": [
+        {
+          "caseTitle": "正常请求-返回200",
+          "caseData": "{\"userId\": 1}",
+          "checkRules": "$.code == 200",
+          "env": "uat"
+        },
+        {
+          "caseTitle": "异常请求-用户不存在",
+          "caseData": "{\"userId\": 99999}",
+          "checkRules": "$.code == 404",
+          "env": "uat"
+        }
+      ]
+    },
+    {
+      "apiName": "创建订单",
+      "method": "POST",
+      "urlDev": "http://dev-api.example.com/order/create",
+      "urlUat": "http://uat-api.example.com/order/create",
+      "serviceCode": "order-service",
+      "testcases": [
+        {
+          "caseTitle": "正常创建订单",
+          "caseData": "{\"productId\": 1, \"quantity\": 2}",
+          "env": "uat"
+        }
+      ]
+    }
+  ]
+}'</pre>
+        </div>
+
+        <!-- === 错误码 === -->
+        <div class="api-section">
+            <h4 class="section-title"><i class="fas fa-exclamation-circle" style="color:#667eea;"></i> 错误码说明</h4>
+            <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+                <thead>
+                    <tr style="background:#f5f7fa;border-bottom:2px solid #667eea;">
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;">HTTP 状态码</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;">业务码</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;">说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:8px 14px;">200</td>
+                        <td style="padding:8px 14px;">200</td>
+                        <td style="padding:8px 14px;">请求成功</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:8px 14px;">401</td>
+                        <td style="padding:8px 14px;">401</td>
+                        <td style="padding:8px 14px;">未授权 / appId 不存在 / appKey 校验失败 / token 过期</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:8px 14px;">403</td>
+                        <td style="padding:8px 14px;">403</td>
+                        <td style="padding:8px 14px;">权限不足（无 user:manage 或 api:manage 权限）</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px 14px;">400</td>
+                        <td style="padding:8px 14px;">—</td>
+                        <td style="padding:8px 14px;">参数校验失败（JSR303），如缺少必填字段</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <style>
+        .api-section {
+            margin: 24px 0; padding: 20px 24px;
+            background: #fafbfc; border-radius: 10px;
+            border: 1px solid #f0f0f0;
+            transition: box-shadow 0.3s;
+        }
+        .api-section:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+        .section-title {
+            font-size: 15px; font-weight: 600; color: #1a1a2e;
+            margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+        }
+        .api-features { list-style: none; padding: 0; margin: 12px 0; }
+        .api-features li {
+            padding: 6px 0; font-size: 14px; color: #444;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .api-features li code { background: #f0f2ff; color: #667eea; padding: 1px 8px; border-radius: 4px; font-size: 12px; }
+        .endpoint-box {
+            display: inline-flex; align-items: center; gap: 12px;
+            background: #1a1a2e; padding: 10px 20px; border-radius: 8px;
+        }
+        .method {
+            display: inline-block; padding: 3px 12px; border-radius: 4px;
+            font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+            color: #fff;
+        }
+        .method.get { background: #1976d2; }
+        .method.post { background: #2e7d32; }
+        .method.put { background: #e65100; }
+        .method.delete { background: #c62828; }
+        .endpoint-url { color: #82aaff; font-family: monospace; font-size: 15px; }
+        .code-block {
+            background: #f5f7fa; padding: 16px 20px; border-radius: 8px;
+            font-size: 13px; line-height: 1.7; overflow-x: auto;
+            border: 1px solid #e8e8e8; font-family: "Fira Code", Consolas, monospace;
+        }
+        .curl-block {
+            background: #1a1a2e; color: #c3e88d;
+        }
+        .api-steps { padding-left: 20px; margin: 10px 0; }
+        .api-steps li { padding: 4px 0; color: #555; font-size: 14px; }
+        .tip-box {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; background: #fff8e1; border-radius: 8px;
+            border-left: 4px solid #f9a825; margin-top: 12px;
+            font-size: 13px; color: #555;
+        }
+        .tip-box.warn {
+            background: #fbe9e7; border-left-color: #e53935;
+        }
+        .tip-box code { background: #fff; padding: 1px 6px; border-radius: 3px; }
+        @media (max-width: 768px) {
+            .code-block { font-size: 11px; padding: 12px; }
+        }
+    </style>
+</div>
+</body>
+</html>
