@@ -34,3 +34,7 @@ sa-token:
 logging:
   level:
     com.lm.interautotestapi: DEBUG
+
+dify:
+  base-url: http://192.168.150.101:81/v1
+  api-key: app-NX1heM4tAXT5wPjwkJ9GdqL5

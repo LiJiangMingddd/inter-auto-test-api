@@ -21,11 +21,15 @@ public class ApiTestcaseController {
     @SaCheckPermission("case:manage")
     public Result<Page<ApiTestcase>> page(@RequestParam(defaultValue = "1") int pageNum,
                                           @RequestParam(defaultValue = "10") int pageSize,
-                                          @RequestParam(required = false) String keyword) {
+                                          @RequestParam(required = false) String keyword,
+                                          @RequestParam(required = false) String env) {
         Page<ApiTestcase> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<ApiTestcase> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.like(ApiTestcase::getCaseTitle, keyword);
+        }
+        if (env != null && !env.isEmpty()) {
+            wrapper.eq(ApiTestcase::getEnv, env);
         }
         wrapper.orderByDesc(ApiTestcase::getId);
         return Result.ok(apiTestcaseService.page(page, wrapper));

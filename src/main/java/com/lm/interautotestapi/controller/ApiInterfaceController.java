@@ -28,12 +28,32 @@ public class ApiInterfaceController {
     @SaCheckPermission("api:manage")
     public Result<Page<ApiInterface>> page(@RequestParam(defaultValue = "1") int pageNum,
                                            @RequestParam(defaultValue = "10") int pageSize,
-                                           @RequestParam(required = false) String keyword) {
+                                           @RequestParam(required = false) String keyword,
+                                           @RequestParam(required = false) String method,
+                                           @RequestParam(required = false) String env) {
         Page<ApiInterface> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<ApiInterface> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
-            wrapper.like(ApiInterface::getApiName, keyword)
-                    .or().like(ApiInterface::getApiInfo, keyword);
+            wrapper.and(w -> w.like(ApiInterface::getApiName, keyword)
+                    .or().like(ApiInterface::getApiInfo, keyword));
+        }
+        if (method != null && !method.isEmpty()) {
+            wrapper.eq(ApiInterface::getMethod, method);
+        }
+        if (env != null && !env.isEmpty()) {
+            switch (env) {
+                case "dev":
+                    wrapper.isNotNull(ApiInterface::getUrlDev).ne(ApiInterface::getUrlDev, "");
+                    break;
+                case "uat":
+                    wrapper.isNotNull(ApiInterface::getUrlUat).ne(ApiInterface::getUrlUat, "");
+                    break;
+                case "pro":
+                    wrapper.isNotNull(ApiInterface::getUrlPro).ne(ApiInterface::getUrlPro, "");
+                    break;
+                default:
+                    break;
+            }
         }
         wrapper.orderByDesc(ApiInterface::getId);
         return Result.ok(apiInterfaceService.page(page, wrapper));

@@ -10,7 +10,13 @@
             <h3><i class="fas fa-vial"></i> 用例列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="tcKeyword" placeholder="按用例标题搜索..." style="width:200px;">
+                    <input class="layui-input" id="tcKeyword" placeholder="按用例标题搜索..." style="width:180px;">
+                    <select id="tcEnv" style="height:38px;border:1px solid var(--border-color);border-radius:6px;padding:0 8px;font-size:13px;background:var(--input-bg);color:var(--text-primary);outline:none;cursor:pointer;">
+                        <option value="">全部环境</option>
+                        <option value="dev">DEV</option>
+                        <option value="uat">UAT</option>
+                        <option value="pro">PRO</option>
+                    </select>
                     <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadTestcase(1)">
                         <i class="fas fa-search"></i> 搜索
                     </button>
@@ -43,8 +49,10 @@
     /** 加载用例列表 */
     function loadTestcase(page) {
         var keyword = document.getElementById('tcKeyword') ? document.getElementById('tcKeyword').value : '';
+        var env = document.getElementById('tcEnv') ? document.getElementById('tcEnv').value : '';
         var url = '/api/testcase/page?pageNum=' + page + '&pageSize=10';
         if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+        if (env) url += '&env=' + encodeURIComponent(env);
         ajax({
             url: url,
             success: function(res) {
@@ -95,7 +103,7 @@
 
         var html =
             '<div style="padding:18px 22px;">' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-link" style="color:#667eea;width:18px;"></i> 接口ID</div><div style="' + wrapStyle + '"><input id="f_tc_interfaceId" style="' + inpStyle + '" value="' + (d.interfaceId||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-link" style="color:#667eea;width:18px;"></i> 接口ID</div><div style="' + wrapStyle + '"><input id="f_tc_interfaceId" type="hidden" value="' + (d.interfaceId||'') + '"><span style="display:inline-flex;align-items:center;height:38px;padding:0 12px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;font-size:14px;color:var(--text-muted);min-width:60px;">' + (d.interfaceId||'—') + '</span><div class="field-hint">接口ID 由系统关联，不可修改</div></div></div>' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-heading" style="color:#667eea;width:18px;"></i> 标题</div><div style="' + wrapStyle + '"><input id="f_tc_title" style="' + inpStyle + '" value="' + escHtml(d.caseTitle||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-code" style="color:#667eea;width:18px;"></i> 请求数据</div><div style="' + wrapStyle + '"><textarea id="f_tc_data" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'" oninput="onCaseDataInput()">' + escHtml(d.caseData||'') + '</textarea><div id="f_tc_data_hint" class="field-hint">JSON 格式，如 <code>{"username":"admin"}</code>；GET 请求作为查询参数，POST 作为请求体。支持 <code>#now#</code> <code>#faker_name#</code> 等占位符</div></div></div>' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-check-double" style="color:#667eea;width:18px;"></i> 断言规则</div><div style="' + wrapStyle + '"><textarea id="f_tc_rules" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'" oninput="onCheckRulesInput()">' + escHtml(d.checkRules||'') + '</textarea><div id="f_tc_rules_hint" class="field-hint">JSON 数组格式，如 <code>[{"json":"$.status"}]</code>。支持5种断言：<code>json</code> <code>exist</code> <code>not_exist</code> <code>sql</code> <code>status_code</code></div></div></div>' +
