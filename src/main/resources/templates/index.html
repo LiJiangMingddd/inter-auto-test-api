@@ -790,6 +790,95 @@
         [data-theme="light"] .action-btn.role { background: rgba(230,81,0,0.08); color: #e65100; }
         [data-theme="light"] .action-btn.danger { background: rgba(198,40,40,0.08); color: #c62828; }
         [data-theme="light"] .action-btn.perm { background: rgba(46,125,50,0.08); color: #2e7d32; }
+
+        /* ===== 格式异常红点提示 ===== */
+        .format-warning {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .format-warning .warn-dot {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ef5350;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: help;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .format-warning .warn-dot .warn-tip {
+            display: none;
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 6px);
+            transform: translateX(-50%);
+            background: rgba(30,30,60,0.95);
+            color: #e0e0f0;
+            font-size: 11px;
+            line-height: 1.4;
+            padding: 6px 10px;
+            border-radius: 6px;
+            white-space: normal;
+            word-break: break-all;
+            min-width: 120px;
+            max-width: 300px;
+            z-index: 99999;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            pointer-events: none;
+            font-weight: 400;
+        }
+        [data-theme="light"] .format-warning .warn-dot .warn-tip {
+            background: rgba(50,50,50,0.95);
+            color: #f0f0f0;
+        }
+        .format-warning .warn-dot .warn-tip::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(30,30,60,0.95);
+        }
+        [data-theme="light"] .format-warning .warn-dot .warn-tip::after {
+            border-top-color: rgba(50,50,50,0.95);
+        }
+        .format-warning .warn-dot:hover .warn-tip {
+            display: block;
+        }
+
+        /* ===== 表单字段提示 ===== */
+        .field-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+        .field-hint code {
+            background: var(--code-bg);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: var(--code-text);
+            font-size: 10px;
+        }
+        .field-error {
+            font-size: 11px;
+            color: #ef5350;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+        .field-ok {
+            font-size: 11px;
+            color: #66bb6a;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -834,6 +923,9 @@
                 </div>
                 <div class="nav-item" data-tab="readme" onclick="switchTab('readme')">
                     <i class="fas fa-file-alt"></i><span>项目文档（README）</span>
+                </div>
+                <div class="nav-item" data-tab="guide" onclick="switchTab('guide')">
+                    <i class="fas fa-graduation-cap"></i><span>用例格式指引</span>
                 </div>
             </div>
             <!-- 系统管理 -->
@@ -890,6 +982,9 @@
 
             <!-- 项目文档 -->
             <div class="page-panel" id="panel-readme" th:insert="pages/readme :: readme-page"></div>
+
+            <!-- 用例格式指引 -->
+            <div class="page-panel" id="panel-guide" th:insert="pages/guide :: guide-page"></div>
 
             <!-- 接口管理 -->
             <div class="page-panel active" id="panel-interface" th:insert="pages/interface :: interface-page"></div>
@@ -1004,6 +1099,99 @@
     }
 
     // ============================================================
+    //  格式校验工具
+    // ============================================================
+    function validateCaseData(val, method) {
+        if (!val || !val.trim()) return { ok: true, msg: '' };
+        var v = val.trim();
+        if (v === '{}') return { ok: true, msg: '' };
+        try {
+            var obj = JSON.parse(v);
+            if (typeof obj !== 'object' || obj === null) return { ok: false, msg: '请求数据必须是 JSON 对象 {} 或 JSON 字符串' };
+            return { ok: true, msg: '' };
+        } catch(e) {
+            if (method && method.toUpperCase() === 'GET' && v.indexOf('=') > -1) {
+                return { ok: true, msg: '' };
+            }
+            return { ok: false, msg: 'JSON 格式错误：' + e.message.substring(0, 60) };
+        }
+    }
+
+    function validateCheckRules(val) {
+        if (!val || !val.trim()) return { ok: true, msg: '' };
+        var v = val.trim();
+        try {
+            var arr = JSON.parse(v);
+            if (!Array.isArray(arr)) return { ok: false, msg: '断言规则必须是 JSON 数组 [...]，不能是对象' };
+            for (var i = 0; i < arr.length; i++) {
+                var rule = arr[i];
+                if (typeof rule !== 'object' || rule === null || Array.isArray(rule)) {
+                    return { ok: false, msg: '第 ' + (i+1) + ' 条规则格式错误，必须是对象 {}' };
+                }
+                var keys = Object.keys(rule);
+                if (keys.length === 0) return { ok: false, msg: '第 ' + (i+1) + ' 条规则为空' };
+                var validKeys = ['json', 'exist', 'not_exist', 'sql', 'status_code'];
+                var invalidKeys = keys.filter(function(k) { return validKeys.indexOf(k) === -1; });
+                if (invalidKeys.length > 0) {
+                    return { ok: false, msg: '第 ' + (i+1) + ' 条规则包含未知关键字: ' + invalidKeys.join(', ') + '（支持: json, exist, not_exist, sql, status_code）' };
+                }
+                if (rule.sql) {
+                    if (!Array.isArray(rule.sql) || rule.sql.length < 2) {
+                        return { ok: false, msg: '第 ' + (i+1) + ' 条 sql 规则格式错误，应为 ["环境名", "SQL语句"]' };
+                    }
+                }
+            }
+            return { ok: true, msg: '' };
+        } catch(e) {
+            return { ok: false, msg: 'JSON 格式错误：' + e.message.substring(0, 60) };
+        }
+    }
+
+    function validateExpectedResults(rulesVal, expectedVal) {
+        if (!rulesVal || !rulesVal.trim()) return { ok: true, msg: '' };
+        if (!expectedVal || !expectedVal.trim()) return { ok: false, msg: '已填写断言规则，期望结果不能为空' };
+        try {
+            var rules = JSON.parse(rulesVal);
+            var expected = JSON.parse(expectedVal);
+            if (!Array.isArray(rules) || !Array.isArray(expected)) return { ok: true, msg: '' };
+            if (rules.length !== expected.length) {
+                return { ok: false, msg: '断言 ' + rules.length + ' 条，期望 ' + expected.length + ' 个，数量不匹配' };
+            }
+            return { ok: true, msg: '' };
+        } catch(e) {
+            return { ok: false, msg: 'JSON 格式错误：' + e.message.substring(0, 60) };
+        }
+    }
+
+    function validateInterface(iface) {
+        var errors = [];
+        if (!iface.apiName || !iface.apiName.trim()) errors.push('接口名称不能为空');
+        if (!iface.method) errors.push('请求方法不能为空');
+        if (!iface.urlDev && !iface.urlUat && !iface.urlPro) errors.push('至少填写一个环境的 URL');
+        return errors;
+    }
+
+    function validateTestcase(tc) {
+        var errors = [];
+        if (!tc.caseTitle || !tc.caseTitle.trim()) errors.push('用例标题不能为空');
+        if (!tc.interfaceId) errors.push('接口ID不能为空');
+        if (!tc.env) errors.push('环境不能为空');
+        var dataResult = validateCaseData(tc.caseData, '');
+        if (!dataResult.ok) errors.push('请求数据：' + dataResult.msg);
+        var rulesResult = validateCheckRules(tc.checkRules);
+        if (!rulesResult.ok) errors.push('断言规则：' + rulesResult.msg);
+        var expectedResult = validateExpectedResults(tc.checkRules, tc.expectedResults);
+        if (!expectedResult.ok) errors.push('期望结果：' + expectedResult.msg);
+        return errors;
+    }
+
+    function buildWarnDot(errors) {
+        if (!errors || errors.length === 0) return '';
+        var tipText = errors.join('；');
+        return '<span class="warn-dot" title="">!<span class="warn-tip">' + tipText + '</span></span>';
+    }
+
+    // ============================================================
     //  页面切换
     // ============================================================
     function switchTab(tab) {
@@ -1025,11 +1213,12 @@
             role: '<i class="fas fa-user-tag"></i> 角色管理',
             permission: '<i class="fas fa-shield-halved"></i> 权限管理',
             'open-api': '<i class="fas fa-book-open"></i> Open API 文档',
-            readme: '<i class="fas fa-file-alt"></i> 项目文档（README）'
+            readme: '<i class="fas fa-file-alt"></i> 项目文档（README）',
+            guide: '<i class="fas fa-graduation-cap"></i> 用例格式指引'
         };
         document.getElementById('pageTitle').innerHTML = titles[tab] || tab;
         // 触发对应页面数据加载
-        var loaders = { interface: loadInterface, testcase: loadTestcase, dashboard: loadDashboard, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme' };
+        var loaders = { interface: loadInterface, testcase: loadTestcase, dashboard: loadDashboard, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme', guide: null };
         if (loaders[tab]) {
             if (loaders[tab] === 'readme') {
                 // readme 面板切换时由 readme.html 内部脚本自动加载

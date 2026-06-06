@@ -58,8 +58,10 @@
                         : item.env === 'uat' ? '<span class="env-badge uat"><i class="fas fa-code-branch"></i> UAT</span>'
                         : item.env === 'pro' ? '<span class="env-badge pro"><i class="fas fa-code-branch"></i> PRO</span>'
                         : '<span class="tag tag-primary">' + (item.env||'DEV') + '</span>';
+                    var tcErrors = validateTestcase(item);
+                    var warnHtml = tcErrors.length > 0 ? ' <span class="format-warning">' + buildWarnDot(tcErrors) + '</span>' : '';
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td><span class="cell-tip"><strong>' + escHtml(item.caseTitle) + '</strong><span class="tip-content">' + escHtml(item.caseTitle) + '</span></span></td>' +
+                        '<td><span class="cell-tip"><strong>' + escHtml(item.caseTitle) + '</strong><span class="tip-content">' + escHtml(item.caseTitle) + '</span></span>' + warnHtml + '</td>' +
                         '<td>' + envHtml + '</td>' +
                         '<td>' + (item.sortOrder||0) + '</td>' +
                         '<td>' + statusHtml + '</td>' +
@@ -95,9 +97,9 @@
             '<div style="padding:18px 22px;">' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-link" style="color:#667eea;width:18px;"></i> 接口ID</div><div style="' + wrapStyle + '"><input id="f_tc_interfaceId" style="' + inpStyle + '" value="' + (d.interfaceId||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-heading" style="color:#667eea;width:18px;"></i> 标题</div><div style="' + wrapStyle + '"><input id="f_tc_title" style="' + inpStyle + '" value="' + escHtml(d.caseTitle||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-code" style="color:#667eea;width:18px;"></i> 请求数据</div><div style="' + wrapStyle + '"><textarea id="f_tc_data" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'">' + escHtml(d.caseData||'') + '</textarea></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-check-double" style="color:#667eea;width:18px;"></i> 断言规则</div><div style="' + wrapStyle + '"><textarea id="f_tc_rules" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'">' + escHtml(d.checkRules||'') + '</textarea></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-bullseye" style="color:#667eea;width:18px;"></i> 期望结果</div><div style="' + wrapStyle + '"><textarea id="f_tc_expected" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'">' + escHtml(d.expectedResults||'') + '</textarea></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-code" style="color:#667eea;width:18px;"></i> 请求数据</div><div style="' + wrapStyle + '"><textarea id="f_tc_data" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'" oninput="onCaseDataInput()">' + escHtml(d.caseData||'') + '</textarea><div id="f_tc_data_hint" class="field-hint">JSON 格式，如 <code>{"username":"admin"}</code>；GET 请求作为查询参数，POST 作为请求体。支持 <code>#now#</code> <code>#faker_name#</code> 等占位符</div></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-check-double" style="color:#667eea;width:18px;"></i> 断言规则</div><div style="' + wrapStyle + '"><textarea id="f_tc_rules" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'" oninput="onCheckRulesInput()">' + escHtml(d.checkRules||'') + '</textarea><div id="f_tc_rules_hint" class="field-hint">JSON 数组格式，如 <code>[{"json":"$.status"}]</code>。支持5种断言：<code>json</code> <code>exist</code> <code>not_exist</code> <code>sql</code> <code>status_code</code></div></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-bullseye" style="color:#667eea;width:18px;"></i> 期望结果</div><div style="' + wrapStyle + '"><textarea id="f_tc_expected" style="' + taStyle + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'" oninput="onExpectedInput()">' + escHtml(d.expectedResults||'') + '</textarea><div id="f_tc_expected_hint" class="field-hint">JSON 数组，与断言规则<strong>一一对应</strong>（数量相同、位置对齐），如 <code>["1"]</code></div></div></div>' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-globe" style="color:#667eea;width:18px;"></i> 环境</div><div style="' + wrapStyle + '"><select id="f_tc_env" style="' + selStyle + '">' +
             '<option value="dev"' + (!d.env||d.env==='dev'?'selected':'') + '>DEV</option>' +
             '<option value="uat"' + (d.env==='uat'?'selected':'') + '>UAT</option>' +
@@ -107,7 +109,7 @@
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-toggle-on" style="color:#667eea;width:18px;"></i> 状态</div><div style="' + wrapStyle + '"><select id="f_tc_enabled" style="' + selStyle + '"><option value="1"' + (d.enabled!==0?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
             '</div>';
 
-        openLayer(title, html, ['620px', '520px'], function(index) {
+        openLayer(title, html, ['640px', '600px'], function(index) {
             var obj = {
                 interfaceId: parseInt(document.getElementById('f_tc_interfaceId').value) || 0,
                 caseTitle: document.getElementById('f_tc_title').value,
@@ -118,6 +120,11 @@
                 sortOrder: parseInt(document.getElementById('f_tc_sort').value) || 0,
                 enabled: parseInt(document.getElementById('f_tc_enabled').value)
             };
+            var errors = validateTestcase(obj);
+            if (errors.length > 0) {
+                layer.msg('<i class="fas fa-exclamation-triangle" style="color:#ef5350;"></i> ' + errors.join('；'), {icon:2, time:3000});
+                return;
+            }
             if (isEdit) obj.id = d.id;
             ajax({
                 url: '/api/testcase', method: isEdit ? 'PUT' : 'POST',
@@ -245,6 +252,42 @@
                 layer.msg('已复制响应内容', {icon:1, time:1500});
             });
         }
+    }
+
+    function onCaseDataInput() {
+        var el = document.getElementById('f_tc_data');
+        var hint = document.getElementById('f_tc_data_hint');
+        if (!el || !hint) return;
+        var val = el.value;
+        if (!val.trim()) { hint.className = 'field-hint'; hint.innerHTML = 'JSON 格式，如 <code>{"username":"admin"}</code>；GET 请求作为查询参数，POST 作为请求体。支持 <code>#now#</code> <code>#faker_name#</code> 等占位符'; return; }
+        var result = validateCaseData(val, '');
+        if (result.ok) { hint.className = 'field-ok'; hint.innerHTML = '<i class="fas fa-check"></i> 格式正确'; }
+        else { hint.className = 'field-error'; hint.innerHTML = '<i class="fas fa-times"></i> ' + result.msg; }
+    }
+
+    function onCheckRulesInput() {
+        var el = document.getElementById('f_tc_rules');
+        var hint = document.getElementById('f_tc_rules_hint');
+        if (!el || !hint) return;
+        var val = el.value;
+        if (!val.trim()) { hint.className = 'field-hint'; hint.innerHTML = 'JSON 数组格式，如 <code>[{"json":"$.status"}]</code>。支持5种断言：<code>json</code> <code>exist</code> <code>not_exist</code> <code>sql</code> <code>status_code</code>'; return; }
+        var result = validateCheckRules(val);
+        if (result.ok) { hint.className = 'field-ok'; hint.innerHTML = '<i class="fas fa-check"></i> 格式正确'; }
+        else { hint.className = 'field-error'; hint.innerHTML = '<i class="fas fa-times"></i> ' + result.msg; }
+        onExpectedInput();
+    }
+
+    function onExpectedInput() {
+        var rulesEl = document.getElementById('f_tc_rules');
+        var expectedEl = document.getElementById('f_tc_expected');
+        var hint = document.getElementById('f_tc_expected_hint');
+        if (!rulesEl || !expectedEl || !hint) return;
+        var rulesVal = rulesEl.value;
+        var expectedVal = expectedEl.value;
+        if (!rulesVal.trim() && !expectedVal.trim()) { hint.className = 'field-hint'; hint.innerHTML = 'JSON 数组，与断言规则<strong>一一对应</strong>（数量相同、位置对齐），如 <code>["1"]</code>'; return; }
+        var result = validateExpectedResults(rulesVal, expectedVal);
+        if (result.ok) { hint.className = 'field-ok'; hint.innerHTML = '<i class="fas fa-check"></i> 格式正确'; }
+        else { hint.className = 'field-error'; hint.innerHTML = '<i class="fas fa-times"></i> ' + result.msg; }
     }
 </script>
 </div>

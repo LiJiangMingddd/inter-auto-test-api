@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="guide-page">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-book"></i> 用例格式指引</h3>
+        </div>
+        <div style="padding:24px 28px;line-height:1.8;color:var(--text-primary);">
+
+            <div class="guide-section">
+                <h4 style="color:#667eea;margin-bottom:12px;"><i class="fas fa-plug" style="width:20px;"></i> 一、接口字段说明</h4>
+                <table class="layui-table" lay-skin="line" style="margin-bottom:16px;">
+                    <thead><tr><th style="width:120px;">字段</th><th style="width:80px;">必填</th><th>说明</th><th style="width:220px;">示例</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>接口名称</strong></td><td>✅</td><td>接口的描述名称，仅做展示</td><td><code>高德逆地码接口</code></td></tr>
+                        <tr><td><strong>描述</strong></td><td>❌</td><td>补充说明</td><td><code>根据经纬度获取地址信息</code></td></tr>
+                        <tr><td><strong>方法</strong></td><td>✅</td><td>请求方法：GET / POST / PUT / DELETE / PATCH</td><td><code>POST</code></td></tr>
+                        <tr><td><strong>DEV URL</strong></td><td>❌</td><td>开发环境地址，env=dev 时使用</td><td><code>https://dev-api.example.com/login</code></td></tr>
+                        <tr><td><strong>UAT URL</strong></td><td>❌</td><td>测试环境地址，env=uat 时使用</td><td><code>https://uat-api.example.com/login</code></td></tr>
+                        <tr><td><strong>PRO URL</strong></td><td>❌</td><td>生产环境地址，env=pro 时使用</td><td><code>https://api.example.com/login</code></td></tr>
+                        <tr><td><strong>服务编码</strong></td><td>❌</td><td>按服务过滤用例；特殊值 <code>auto</code> 表示被自动加载执行</td><td><code>auto</code></td></tr>
+                        <tr><td><strong>状态</strong></td><td>❌</td><td>禁用后该接口下所有用例都不会执行</td><td><code>启用</code></td></tr>
+                    </tbody>
+                </table>
+                <div class="guide-tip">
+                    <i class="fas fa-lightbulb" style="color:#f9a825;margin-right:6px;"></i>
+                    <strong>重要：</strong>如果当前环境对应的 URL 为空，该接口下的用例会被跳过。例如 env=dev 但 url_dev 为空，则不会执行。
+                </div>
+            </div>
+
+            <div class="guide-section">
+                <h4 style="color:#667eea;margin-bottom:12px;"><i class="fas fa-vial" style="width:20px;"></i> 二、用例字段说明</h4>
+                <table class="layui-table" lay-skin="line" style="margin-bottom:16px;">
+                    <thead><tr><th style="width:120px;">字段</th><th style="width:80px;">必填</th><th>说明</th><th style="width:220px;">示例</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>接口ID</strong></td><td>✅</td><td>关联的接口ID</td><td><code>1</code></td></tr>
+                        <tr><td><strong>用例标题</strong></td><td>✅</td><td>显示在报告和日志中</td><td><code>登录成功-dev</code></td></tr>
+                        <tr><td><strong>请求数据</strong></td><td>❌</td><td>JSON 格式，详见下方</td><td><code>{"username":"admin"}</code></td></tr>
+                        <tr><td><strong>断言规则</strong></td><td>❌</td><td>JSON 数组格式，详见下方</td><td><code>[{"json":"$.status"}]</code></td></tr>
+                        <tr><td><strong>期望结果</strong></td><td>❌</td><td>JSON 数组，与断言规则一一对应</td><td><code>["1"]</code></td></tr>
+                        <tr><td><strong>环境</strong></td><td>✅</td><td>dev / uat / pro，框架只加载匹配环境的用例</td><td><code>dev</code></td></tr>
+                        <tr><td><strong>排序</strong></td><td>❌</td><td>值越小越靠前执行</td><td><code>0</code></td></tr>
+                        <tr><td><strong>状态</strong></td><td>❌</td><td>禁用后该用例不会执行</td><td><code>启用</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="guide-section">
+                <h4 style="color:#667eea;margin-bottom:12px;"><i class="fas fa-paper-plane" style="width:20px;"></i> 三、请求数据（case_data）格式</h4>
+                <div class="guide-tip" style="margin-bottom:12px;">
+                    <i class="fas fa-info-circle" style="color:#667eea;margin-right:6px;"></i>
+                    请求数据必须是合法的 <strong>JSON 格式</strong>，框架根据请求方法自动处理。
+                </div>
+                <table class="layui-table" lay-skin="line" style="margin-bottom:12px;">
+                    <thead><tr><th style="width:100px;">请求方法</th><th>case_data 格式</th><th>框架处理方式</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>GET</code></td><td><code>{"wd": "Python"}</code></td><td>作为 URL 查询参数发送</td></tr>
+                        <tr><td><code>GET</code></td><td><code>"wd=Python&page=1"</code></td><td>自动解析为 dict 后作为参数发送</td></tr>
+                        <tr><td><code>POST/PUT/DELETE/PATCH</code></td><td><code>{"username":"admin","password":"123"}</code></td><td>作为请求体（JSON body）发送</td></tr>
+                        <tr><td>无参数</td><td><code>{}</code> 或留空</td><td>不发送数据</td></tr>
+                    </tbody>
+                </table>
+
+                <h5 style="color:var(--text-secondary);margin:16px 0 8px;"><i class="fas fa-magic" style="color:#f9a825;"></i> 自定义参数替换（#关键字#）</h5>
+                <div class="guide-tip" style="margin-bottom:8px;">
+                    支持 <code>#关键字#</code> 占位符，运行时自动替换为动态值，减少对用例的修改。
+                </div>
+                <table class="layui-table" lay-skin="line">
+                    <thead><tr><th style="width:140px;">占位符</th><th>替换结果</th><th style="width:180px;">示例</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>#now#</code></td><td>当前时间</td><td><code>2026-06-06 14:30:00</code></td></tr>
+                        <tr><td><code>#faker_name#</code></td><td>随机中文姓名</td><td><code>张三</code></td></tr>
+                        <tr><td><code>#faker_ssn#</code></td><td>随机身份证号</td><td><code>310...</code></td></tr>
+                        <tr><td><code>#faker_job#</code></td><td>随机职业</td><td><code>软件工程师</code></td></tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:8px;">
+                    <strong>示例：</strong>
+                    <pre class="guide-code">{"username": "#faker_name#", "timestamp": "#now#"}</pre>
+                </div>
+            </div>
+
+            <div class="guide-section">
+                <h4 style="color:#667eea;margin-bottom:12px;"><i class="fas fa-check-double" style="width:20px;"></i> 四、断言规则（check_rules）格式</h4>
+                <div class="guide-tip" style="margin-bottom:12px;">
+                    <i class="fas fa-exclamation-triangle" style="color:#ef5350;margin-right:6px;"></i>
+                    断言规则必须是 <strong>JSON 数组</strong>，每个元素是一个断言条件。与 <code>expected_results</code> 必须<strong>数量相同、位置对齐</strong>。
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h5 style="color:var(--text-secondary);margin-bottom:8px;">① json — JSONPath 断言</h5>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px;">从响应体中通过 JSONPath 提取值，与期望结果对比。</p>
+                    <pre class="guide-code">[{"json": "$.status"}, {"json": "$.data.name"}]</pre>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h5 style="color:var(--text-secondary);margin-bottom:8px;">② exist — 字段存在断言</h5>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px;">检查响应体中是否包含指定的 key。</p>
+                    <pre class="guide-code">[{"exist": "data"}, {"exist": "message"}]</pre>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h5 style="color:var(--text-secondary);margin-bottom:8px;">③ not_exist — 字段不存在断言</h5>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px;">检查响应体中不包含指定的 key。</p>
+                    <pre class="guide-code">[{"not_exist": "error"}, {"not_exist": "exception"}]</pre>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h5 style="color:var(--text-secondary);margin-bottom:8px;">④ sql — 数据库断言</h5>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px;">执行 SQL 查询，将查询结果字段值与期望结果逐一对比。</p>
+                    <pre class="guide-code">[{"sql": ["dev", "SELECT id, name FROM user WHERE id = 1"]}]</pre>
+                    <div class="guide-tip" style="margin-top:6px;">
+                        第一个元素是数据库环境名（对应配置中的键名），第二个是 SQL 语句。查询结果的每个字段与 expected_results 中的值逐一对比。
+                    </div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h5 style="color:var(--text-secondary);margin-bottom:8px;">⑤ status_code — HTTP 状态码断言</h5>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:6px;">校验 HTTP 响应状态码，值填空字符串即可。</p>
+                    <pre class="guide-code">[{"status_code": ""}]</pre>
+                </div>
+            </div>
+
+            <div class="guide-section">
+                <h4 style="color:#667eea;margin-bottom:12px;"><i class="fas fa-bullseye" style="width:20px;"></i> 五、期望结果（expected_results）格式</h4>
+                <div class="guide-tip" style="margin-bottom:12px;">
+                    期望结果必须是 <strong>JSON 数组</strong>，与 check_rules <strong>一一对应</strong>（数量必须相同，位置必须对齐）。
+                </div>
+                <table class="layui-table" lay-skin="line" style="margin-bottom:12px;">
+                    <thead><tr><th>check_rules</th><th>expected_results</th><th>含义</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>{"json": "$.status"}</code></td><td><code>"1"</code></td><td>响应中 status 字段值应等于 "1"</td></tr>
+                        <tr><td><code>{"exist": "data"}</code></td><td><code>"True"</code></td><td>响应中应包含 data 字段</td></tr>
+                        <tr><td><code>{"not_exist": "error"}</code></td><td><code>"True"</code></td><td>响应中不应包含 error 字段</td></tr>
+                        <tr><td><code>{"status_code": ""}</code></td><td><code>200</code></td><td>HTTP 状态码应为 200</td></tr>
+                        <tr><td><code>{"sql": ["dev", "SELECT id, name FROM user WHERE id=1"]}</code></td><td><code>[1, "张三"]</code></td><td>SQL 查询结果 id=1, name="张三"</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="guide-section">
+                <h4 style="color:#667eea;margin-bottom:12px;"><i class="fas fa-code" style="width:20px;"></i> 六、完整示例</h4>
+                <pre class="guide-code">接口名称：高德逆地码接口
+方法：GET
+DEV URL：https://ditu.amap.com/service/regeo
+UAT URL：https://ditu.amap.com/service/regeo
+PRO URL：https://ditu.amap.com/service/regeo
+
+用例1：
+  标题：逆地码查询成功-dev
+  请求数据：{"longitude": "121.049255", "latitude": "31.315590"}
+  断言规则：[{"json": "$.status"}, {"exist": "data"}]
+  期望结果：["1", "True"]
+  环境：dev
+
+用例2：
+  标题：带动态参数-dev
+  请求数据：{"name": "#faker_name#", "time": "#now#"}
+  断言规则：[{"json": "$.status"}]
+  期望结果：["1"]
+  环境：dev
+
+用例3：
+  标题：数据库校验-dev
+  请求数据：{"order_id": "106828548100480"}
+  断言规则：[{"json": "$.status"}, {"sql": ["dev", "SELECT id, BIZ_TYPE FROM ota_order WHERE id = 106828548100480"]}]
+  期望结果：["1", [106828548100480, 10]]
+  环境：dev</pre>
+            </div>
+
+            <div class="guide-section">
+                <h4 style="color:#ef5350;margin-bottom:12px;"><i class="fas fa-exclamation-triangle" style="width:20px;"></i> 七、常见错误</h4>
+                <table class="layui-table" lay-skin="line">
+                    <thead><tr><th style="width:60px;">类型</th><th>错误写法</th><th style="width:60px;">正确</th><th>说明</th></tr></thead>
+                    <tbody>
+                        <tr><td>🔴</td><td><code>{"json": "$.status"}</code></td><td>✅</td><td>断言规则必须是<strong>数组</strong>，即使只有一条：<code>[{"json":"$.status"}]</code></td></tr>
+                        <tr><td>🔴</td><td><code>[{"json":"$.status"}]</code><br><code>["1", "True"]</code></td><td>❌</td><td>断言1条但期望2个，数量不匹配</td></tr>
+                        <tr><td>🔴</td><td><code>{username: "admin"}</code></td><td>✅</td><td>JSON 的 key 必须用<strong>双引号</strong>：<code>{"username":"admin"}</code></td></tr>
+                        <tr><td>🔴</td><td><code>{'username':'admin'}</code></td><td>✅</td><td>不能用<strong>单引号</strong>，JSON 只支持双引号</td></tr>
+                        <tr><td>🟡</td><td>接口 URL 为空</td><td>⚠️</td><td>对应环境的 URL 为空时，用例会被跳过不执行</td></tr>
+                        <tr><td>🟡</td><td>env 不匹配</td><td>⚠️</td><td>运行 env=dev 但用例 env=uat，该用例不会被执行</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <style>
+        .guide-section {
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .guide-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .guide-tip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .guide-code {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-family: "Fira Code", Consolas, monospace;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 0;
+            overflow-x: auto;
+        }
+    </style>
+</div>
+</body>
+</html>

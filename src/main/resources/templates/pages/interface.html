@@ -52,8 +52,10 @@
                         ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
                         : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
                     var tcCount = item.testcaseCount != null ? item.testcaseCount : '-';
+                    var ifaceErrors = validateInterface(item);
+                    var warnHtml = ifaceErrors.length > 0 ? ' <span class="format-warning">' + buildWarnDot(ifaceErrors) + '</span>' : '';
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td><span class="cell-tip"><strong>' + escHtml(item.apiName) + '</strong>' + (item.apiInfo ? '<span class="tip-content">' + escHtml(item.apiName) + '：' + escHtml(item.apiInfo) + '</span>' : '') + '</span></td>' +
+                        '<td><span class="cell-tip"><strong>' + escHtml(item.apiName) + '</strong>' + (item.apiInfo ? '<span class="tip-content">' + escHtml(item.apiName) + '：' + escHtml(item.apiInfo) + '</span>' : '') + '</span>' + warnHtml + '</td>' +
                         '<td><span class="tag tag-primary">' + escHtml(item.method) + '</span></td>' +
                         '<td style="text-align:center;"><span class="tag tag-primary">' + tcCount + '</span></td>' +
                         '<td>' + statusHtml + '</td>' +
@@ -154,18 +156,19 @@
         var html =
             '<div style="padding:20px 24px;">' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-tag" style="color:#667eea;width:18px;"></i> 名称</div><div style="' + wrapStyle + '"><input id="f_name" style="' + inpStyle + '" value="' + escHtml(d.apiName||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-info-circle" style="color:#667eea;width:18px;"></i> 描述</div><div style="' + wrapStyle + '"><input id="f_info" style="' + inpStyle + '" value="' + escHtml(d.apiInfo||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-info-circle" style="color:#667eea;width:18px;"></i> 描述</div><div style="' + wrapStyle + '"><input id="f_info" style="' + inpStyle + '" value="' + escHtml(d.apiInfo||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"><div class="field-hint">接口描述，仅做说明，不参与执行逻辑</div></div></div>' +
             '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-code" style="color:#667eea;width:18px;"></i> 方法</div><div style="' + wrapStyle + '"><select id="f_method" style="' + selStyle + '">' +
             ['GET','POST','PUT','DELETE','PATCH'].map(function(m) { return '<option value="' + m + '"' + (d.method===m?'selected':'') + '>' + m + '</option>'; }).join('') +
             '</select></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> DEV</div><div style="' + wrapStyle + '"><input id="f_urlDev" style="' + inpStyle + '" value="' + escHtml(d.urlDev||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> UAT</div><div style="' + wrapStyle + '"><input id="f_urlUat" style="' + inpStyle + '" value="' + escHtml(d.urlUat||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> PRO</div><div style="' + wrapStyle + '"><input id="f_urlPro" style="' + inpStyle + '" value="' + escHtml(d.urlPro||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-cog" style="color:#667eea;width:18px;"></i> 服务编码</div><div style="' + wrapStyle + '"><input id="f_serviceCode" style="' + inpStyle + '" value="' + escHtml(d.serviceCode||'') + '" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"></div></div>' +
-            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-toggle-on" style="color:#667eea;width:18px;"></i> 状态</div><div style="' + wrapStyle + '"><select id="f_enabled" style="' + selStyle + '"><option value="1"' + (d.enabled===1||d.enabled==null?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> DEV</div><div style="' + wrapStyle + '"><input id="f_urlDev" style="' + inpStyle + '" value="' + escHtml(d.urlDev||'') + '" placeholder="https://dev-api.example.com/..." onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"><div class="field-hint">开发环境地址，env=dev 时使用</div></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> UAT</div><div style="' + wrapStyle + '"><input id="f_urlUat" style="' + inpStyle + '" value="' + escHtml(d.urlUat||'') + '" placeholder="https://uat-api.example.com/..." onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"><div class="field-hint">测试环境地址，env=uat 时使用</div></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-server" style="color:#667eea;width:18px;"></i> PRO</div><div style="' + wrapStyle + '"><input id="f_urlPro" style="' + inpStyle + '" value="' + escHtml(d.urlPro||'') + '" placeholder="https://api.example.com/..." onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"><div class="field-hint">生产环境地址，env=pro 时使用</div></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-cog" style="color:#667eea;width:18px;"></i> 服务编码</div><div style="' + wrapStyle + '"><input id="f_serviceCode" style="' + inpStyle + '" value="' + escHtml(d.serviceCode||'') + '" placeholder="如 auto" onfocus="this.style.borderColor=\'#667eea\'" onblur="this.style.borderColor=\'var(--border-color)\'"><div class="field-hint">按服务过滤用例；特殊值 <code>auto</code> 表示被自动加载执行</div></div></div>' +
+            '<div style="' + rowStyle + '"><div style="' + lblStyle + '"><i class="fas fa-toggle-on" style="color:#667eea;width:18px;"></i> 状态</div><div style="' + wrapStyle + '"><select id="f_enabled" style="' + selStyle + '"><option value="1"' + (d.enabled===1||d.enabled==null?'selected':'') + '>启用</option><option value="0"' + (d.enabled===0?'selected':'') + '>禁用</option></select><div class="field-hint">禁用后该接口下所有用例都不会执行</div></div></div>' +
+            '<div style="margin-top:6px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;"><div style="font-size:12px;color:var(--text-muted);"><i class="fas fa-lightbulb" style="color:#f9a825;margin-right:4px;"></i> <strong>提示：</strong>如果当前环境对应的 URL 为空，该接口下的用例会被跳过。至少填写一个环境的 URL。详细格式指引请查看左侧菜单「用例格式指引」。</div></div>' +
             '</div>';
 
-        openLayer(title, html, ['540px', '480px'], function(index) {
+        openLayer(title, html, ['560px', '560px'], function(index) {
             var obj = {
                 apiName: document.getElementById('f_name').value,
                 apiInfo: document.getElementById('f_info').value,
@@ -176,6 +179,11 @@
                 serviceCode: document.getElementById('f_serviceCode').value,
                 enabled: parseInt(document.getElementById('f_enabled').value)
             };
+            var errors = validateInterface(obj);
+            if (errors.length > 0) {
+                layer.msg('<i class="fas fa-exclamation-triangle" style="color:#ef5350;"></i> ' + errors.join('；'), {icon:2, time:3000});
+                return;
+            }
             if (isEdit) obj.id = d.id;
             ajax({
                 url: '/api/interface', method: isEdit ? 'PUT' : 'POST',
