@@ -65,18 +65,18 @@
 .card-orange .card-icon { background:rgba(255,255,255,.2); }
 .card-blue   .card-icon { background:rgba(255,255,255,.2); }
 
-/* ---- 图表容器炫酷风格（暗夜版） ---- */
+/* ---- 图表容器风格 ---- */
 .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .chart-box {
-    background: rgba(255,255,255,0.04); backdrop-filter:blur(12px);
+    background: var(--bg-card); backdrop-filter:blur(12px);
     border-radius:16px; padding:20px 22px;
-    border:1px solid rgba(255,255,255,0.07);
+    border:1px solid var(--border-color);
     transition:all .4s;
 }
-.chart-box:hover { background: rgba(255,255,255,0.07); transform:translateY(-2px); }
+.chart-box:hover { background: var(--bg-card-hover); transform:translateY(-2px); }
 .chart-box .chart-title {
-    font-size:15px; font-weight:600; color:#e0e0f0; margin-bottom:14px; padding-bottom:12px;
-    border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px;
+    font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:14px; padding-bottom:12px;
+    border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:8px;
 }
 .chart-box .chart-title i { color:#667eea; }
 

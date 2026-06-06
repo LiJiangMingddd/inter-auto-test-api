@@ -20,14 +20,14 @@
                 </button>
             </div>
         </div>
-        <table class="layui-table" lay-skin="line">
+        <table class="layui-table" lay-skin="line" style="table-layout:auto;">
             <thead>
             <tr>
-                <th style="width:60px;">ID</th>
-                <th>角色名称</th>
-                <th>角色编码</th>
-                <th>描述</th>
-                <th style="width:190px;">操作</th>
+                <th style="width:55px;">ID</th>
+                <th style="min-width:80px;">角色名称</th>
+                <th style="min-width:90px;">角色编码</th>
+                <th style="min-width:80px;">描述</th>
+                <th class="ops-cell">操作</th>
             </tr>
             </thead>
             <tbody id="roleTbody"></tbody>
@@ -51,12 +51,12 @@
                 (data.records || []).forEach(function(item, i) {
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
                         '<td>' + item.id + '</td>' +
-                        '<td><strong>' + escHtml(item.roleName) + '</strong></td>' +
-                        '<td><code style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;color:#82aaff;">' + escHtml(item.roleCode) + '</code></td>' +
-                        '<td><small style="color:#999;">' + escHtml(item.roleDesc||'-') + '</small></td>' +
-                        '<td>' +
-                        '<button class="action-btn edit" onclick="editRole(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button> ' +
-                        '<button class="action-btn perm" onclick="assignRolePerm(' + item.id + ',\'' + escHtml(item.roleName) + '\')"><i class="fas fa-shield-halved"></i> 权限</button> ' +
+                        '<td><span class="cell-tip"><strong>' + escHtml(item.roleName) + '</strong><span class="tip-content">' + escHtml(item.roleName) + '</span></span></td>' +
+                        '<td><code style="background:var(--code-bg);padding:2px 8px;border-radius:4px;color:var(--code-text);">' + escHtml(item.roleCode) + '</code></td>' +
+                        '<td><span class="cell-tip"><small style="color:#999;">' + escHtml(item.roleDesc||'-') + '</small><span class="tip-content">' + escHtml(item.roleDesc||'-') + '</span></span></td>' +
+                        '<td class="ops-cell">' +
+                        '<button class="action-btn edit" onclick="editRole(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button>' +
+                        '<button class="action-btn perm" onclick="assignRolePerm(' + item.id + ',\'' + escHtml(item.roleName) + '\')"><i class="fas fa-shield-halved"></i> 权限</button>' +
                         '<button class="action-btn danger" onclick="deleteRole(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
                         '</td></tr>';
                 });
@@ -132,7 +132,7 @@
                         var rolePermIds = (res2.code === 200 && res2.data) ? res2.data : [];
                         perms.forEach(function(p) {
                             var checked = rolePermIds.indexOf(p.id) > -1 ? 'checked' : '';
-                            permCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><input type="checkbox" name="permChk" value="' + p.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(p.permName) + ' <small>(' + escHtml(p.permCode) + ')</small>"></div>';
+                            permCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid var(--border-color);"><input type="checkbox" name="permChk" value="' + p.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(p.permName) + ' <small>(' + escHtml(p.permCode) + ')</small>"></div>';
                         });
                         if (!perms.length) {
                             permCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无权限，请先创建权限</div>';

@@ -223,12 +223,12 @@
         line-height: 1.5;
     }
 
-    /* 文档内容样式 - 暗夜 GitHub 风格 */
+    /* 文档内容样式 */
     .markdown-body {
         font-family: -apple-system, "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
         font-size: 15px;
         line-height: 1.8;
-        color: #c0c8d8;
+        color: var(--text-secondary);
         word-wrap: break-word;
     }
     .markdown-body h1 {
@@ -236,24 +236,24 @@
         border-bottom: 2px solid #667eea;
         padding-bottom: .3em;
         margin: 1.2em 0 .6em;
-        color: #e0e0f0;
+        color: var(--text-primary);
     }
     .markdown-body h2 {
         font-size: 1.5em;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        border-bottom: 1px solid var(--border-color);
         padding-bottom: .3em;
         margin: 1.2em 0 .5em;
-        color: #e0e0f0;
+        color: var(--text-primary);
     }
     .markdown-body h3 {
         font-size: 1.2em;
         margin: 1em 0 .5em;
-        color: #d0d8e8;
+        color: var(--text-primary);
     }
     .markdown-body h4 {
         font-size: 1em;
         margin: 1em 0 .5em;
-        color: #c0c8d8;
+        color: var(--text-secondary);
     }
     .markdown-body p {
         margin: .6em 0;
@@ -266,16 +266,16 @@
         margin: .3em 0;
     }
     .markdown-body code {
-        background: rgba(102,126,234,0.12);
-        color: #82aaff;
+        background: var(--code-bg);
+        color: var(--code-text);
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 13px;
         font-family: "Fira Code", Consolas, "Courier New", monospace;
     }
     .markdown-body pre {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 16px 20px;
         overflow-x: auto;
@@ -284,11 +284,11 @@
         transition: box-shadow 0.2s;
     }
     .markdown-body pre:hover {
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px var(--shadow-color);
     }
     .markdown-body pre code {
         background: none;
-        color: #c0c8d8;
+        color: var(--text-secondary);
         padding: 0;
         border-radius: 0;
         font-size: 13px;
@@ -299,7 +299,7 @@
         padding: .5em 1em;
         margin: .8em 0;
         background: rgba(102,126,234,0.06);
-        color: #8899b0;
+        color: var(--text-muted);
         border-radius: 0 6px 6px 0;
     }
     .markdown-body table {
@@ -308,14 +308,14 @@
         margin: .8em 0;
         border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 12px var(--shadow-color);
         transition: box-shadow 0.2s;
     }
     .markdown-body table:hover {
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px var(--shadow-color);
     }
     .markdown-body table th, .markdown-body table td {
-        border: 1px solid rgba(255,255,255,0.06);
+        border: 1px solid var(--border-color);
         padding: 10px 14px;
         text-align: left;
     }
@@ -326,10 +326,10 @@
         font-size: 14px;
     }
     .markdown-body table tr:nth-child(even) {
-        background: rgba(255,255,255,0.02);
+        background: var(--border-light);
     }
     .markdown-body table tr:hover td {
-        background: rgba(102,126,234,0.06);
+        background: var(--table-hover);
     }
     .markdown-body hr {
         border: none;
@@ -339,10 +339,10 @@
     }
     .markdown-body strong {
         font-weight: 600;
-        color: #e0e0f0;
+        color: var(--text-primary);
     }
     .markdown-body a {
-        color: #82aaff;
+        color: var(--code-text);
         text-decoration: none;
         transition: color 0.2s;
     }
