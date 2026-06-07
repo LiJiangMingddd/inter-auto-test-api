@@ -224,7 +224,7 @@
     /** 接口详情弹窗：展示接口信息 + 关联测试用例 */
     function showInterfaceDetail(interfaceId) {
         ajax({
-            url: '/api/interface/' + interfaceId + '/detail',
+            url: getProjectApi('/interface/' + interfaceId + '/detail'),
             success: function(res) {
                 if (res.code !== 200) { layer.msg(res.msg); return; }
                 var data = res.data;

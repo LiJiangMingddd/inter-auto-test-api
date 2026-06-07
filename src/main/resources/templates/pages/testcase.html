@@ -323,12 +323,12 @@
     }
 
     function editTestcase(id) {
-        ajax({ url: '/api/testcase/' + id, success: function(res) { if (res.code === 200) showTestcaseForm(res.data); } });
+        ajax({ url: getProjectApi('/testcase/' + id), success: function(res) { if (res.code === 200) showTestcaseForm(res.data); } });
     }
 
     function deleteTestcase(id) {
         layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;"></i> 确定删除该用例？', { icon: 3, title: '确认' }, function(index) {
-            ajax({ url: '/api/testcase/' + id, method: 'DELETE',
+            ajax({ url: getProjectApi('/testcase/' + id), method: 'DELETE',
                 success: function(res) {
                     if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadTestcase(1); }
                     else { layer.msg(res.msg, {icon:2}); }
