@@ -16,6 +16,6 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/auth/login",
                         "/api/auth/getToken",
-                        "/api/open/health");
+                        "/api/project/{projectId}/open/health");
     }
 }

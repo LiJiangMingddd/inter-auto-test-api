@@ -10,7 +10,7 @@
             <h3><i class="fas fa-users"></i> 用户列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="userKeyword" placeholder="搜索用户名/昵称..." style="width:200px;">
+                    <input class="layui-input" id="userKeyword" placeholder="搜索用户名/昵称..." style="width:200px;" onkeydown="if(event.key==='Enter')loadUser(1)">
                     <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadUser(1)">
                         <i class="fas fa-search"></i> 搜索
                     </button>
@@ -23,7 +23,6 @@
         <table class="layui-table" lay-skin="line" style="table-layout:auto;">
             <thead>
             <tr>
-                <th style="width:55px;">ID</th>
                 <th style="min-width:80px;">用户名</th>
                 <th style="min-width:70px;">昵称</th>
                 <th style="min-width:100px;">邮箱</th>
@@ -56,7 +55,6 @@
                         ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
                         : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td>' + item.id + '</td>' +
                         '<td><span class="cell-tip"><strong>' + escHtml(item.username) + '</strong><span class="tip-content">' + escHtml(item.username) + '</span></span></td>' +
                         '<td><span class="cell-tip">' + escHtml(item.nickname||'-') + '<span class="tip-content">' + escHtml(item.nickname||'-') + '</span></span></td>' +
                         '<td><span class="cell-tip">' + escHtml(item.email||'-') + '<span class="tip-content">' + escHtml(item.email||'-') + '</span></span></td>' +
@@ -70,7 +68,7 @@
                         '</td></tr>';
                 });
                 if (!html) {
-                    html = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-users-slash"></i><p>暂无用户数据</p></div></td></tr>';
+                    html = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users-slash"></i><p>暂无用户数据</p></div></td></tr>';
                 }
                 document.getElementById('userTbody').innerHTML = html;
                 renderPager('userPage', data, loadUser);
@@ -96,7 +94,7 @@
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-phone"></i> 手机</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_phone" class="layui-input" value="' + escHtml(d.phone||'') + '"></div></div>' +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-key"></i> AppID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_user_appId" class="layui-input" value="' + escHtml(d.appId||'') + '" ' + (!isEdit?'placeholder="自动生成"':'') + '></div></div>' +
             (isEdit ? '' : '<div class="layui-form-item" style="padding:8px 0 4px 110px;color:#f9a825;font-size:12px;"><i class="fas fa-info-circle"></i> 新增用户后将自动生成 AppID 和 AppKey，请复制保存</div>') +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_user_status" class="layui-input"><option value="1"' + (d.status!==0?'selected':'') + '>启用</option><option value="0"' + (d.status===0?'selected':'') + '>禁用</option></select></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-toggle-on"></i> 状态</label><div class="layui-input-block" style="margin-left:110px;"><select id="f_user_status" class="layui-input"><option value="1"' + (d.status!==0?' selected':'') + '>启用</option><option value="0"' + (d.status===0?' selected':'') + '>禁用</option></select></div></div>' +
             '</div></div>';
 
         openLayer(title, html, ['520px', '420px'], function(index) {
@@ -178,11 +176,13 @@
                     success: function(res2) {
                         var userRoleIds = (res2.code === 200 && res2.data) ? res2.data : [];
                         roles.forEach(function(r) {
-                            var checked = userRoleIds.indexOf(r.id) > -1 ? 'checked' : '';
-                            roleCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid var(--border-color);"><input type="checkbox" name="roleChk" value="' + r.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(r.roleName) + ' <small>(' + escHtml(r.roleCode) + ')</small>"></div>';
+                            var checked = userRoleIds.indexOf(r.id) > -1 ? ' checked' : '';
+                            roleCheckboxes += '<label style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(102,126,234,.05)\'" onmouseout="this.style.background=\'\'">' +
+                                '<input type="checkbox" name="roleChk" value="' + r.id + '"' + checked + ' style="width:16px;height:16px;accent-color:#667eea;cursor:pointer;">' +
+                                '<span style="flex:1;"><strong style="color:var(--text-primary);">' + escHtml(r.roleName) + '</strong> <code style="background:var(--code-bg);padding:1px 6px;border-radius:3px;color:var(--code-text);font-size:11px;">' + escHtml(r.roleCode) + '</code></span></label>';
                         });
                         if (!roles.length) {
-                            roleCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无角色，请先创建角色</div>';
+                            roleCheckboxes = '<div style="text-align:center;padding:30px 0;color:var(--text-muted);"><i class="fas fa-info-circle"></i> 暂无角色，请先创建角色</div>';
                         }
                     }
                 });
@@ -190,10 +190,10 @@
         });
 
         var html = '<div style="padding:20px 28px;">' +
-            '<p style="margin-bottom:16px;color:#666;"><i class="fas fa-user-tag" style="color:#667eea;"></i> 为用户 <strong>' + escHtml(username) + '</strong> 分配角色</p>' +
+            '<p style="margin-bottom:16px;color:var(--text-secondary);"><i class="fas fa-user-tag" style="color:#667eea;"></i> 为用户 <strong style="color:var(--text-primary);">' + escHtml(username) + '</strong> 分配角色</p>' +
             roleCheckboxes + '</div>';
 
-        openLayer('分配角色', html, ['400px', '360px'], function(index) {
+        openLayer('分配角色', html, ['420px', '400px'], function(index) {
             var checks = document.querySelectorAll('input[name="roleChk"]:checked');
             var roleIds = [];
             checks.forEach(function(c) { roleIds.push(parseInt(c.value)); });

@@ -47,9 +47,9 @@
             <div style="background:linear-gradient(135deg,#e65100,#ff8f00);border-radius:10px;padding:20px;color:#fff;">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
                     <span style="background:rgba(255,255,255,0.2);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">3</span>
-                    <span style="font-size:16px;font-weight:600;">调用 /api/open/batch-import 批量导入</span>
+                    <span style="font-size:16px;font-weight:600;">调用 /api/project/{projectId}/open/batch-import 批量导入</span>
                 </div>
-                <p style="margin:4px 0 0 44px;font-size:14px;opacity:0.9;">在请求头 <code>Authorization: {token}</code> 中携带 token，请求体中传入接口和用例数据。</p>
+                <p style="margin:4px 0 0 44px;font-size:14px;opacity:0.9;">在请求头 <code>Authorization: {token}</code> 中携带 token，URL 中传入项目ID <code>{projectId}</code>，请求体中传入接口和用例数据。</p>
             </div>
         </div>
 
@@ -94,11 +94,12 @@
             <h4 class="section-title"><i class="fas fa-exchange-alt" style="color:#667eea;"></i> Step 2：批量导入接口</h4>
             <div class="endpoint-box">
                 <span class="method post">POST</span>
-                <span class="endpoint-url">/api/open/batch-import</span>
+                <span class="endpoint-url">/api/project/{projectId}/open/batch-import</span>
             </div>
             <p style="margin-top:8px;color:#999;font-size:13px;">
                 Content-Type: <code>application/json; charset=utf-8</code>
                 <span style="margin-left:12px;">请求头：<code>Authorization: {token}</code></span>
+                <span style="margin-left:12px;">路径参数：<code>projectId</code> - 项目ID</span>
             </p>
 
             <p style="margin-top:16px;"><strong>请求体结构：</strong></p>
@@ -158,8 +159,8 @@
   -H "Content-Type: application/json" \
   -d '{"appId": "你的AppID", "appKey": "你的AppKey"}' | jq -r '.data.token')</pre>
 
-            <p style="margin-top:12px;"><strong>第二步：批量导入接口</strong></p>
-            <pre class="code-block curl-block">curl -X POST http://localhost:8849/api/open/batch-import \
+            <p style="margin-top:12px;"><strong>第二步：批量导入接口（其中 <code>{projectId}</code> 替换为实际项目ID）</strong></p>
+            <pre class="code-block curl-block">curl -X POST http://localhost:8849/api/project/{projectId}/open/batch-import \
   -H "Content-Type: application/json" \
   -H "Authorization: $TOKEN" \
   -d '{

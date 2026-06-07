@@ -11,7 +11,7 @@
             <h3><i class="fas fa-list"></i> 接口列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="interfaceKeyword" placeholder="搜索接口名称/描述..." style="width:180px;">
+                    <input class="layui-input" id="interfaceKeyword" placeholder="搜索接口名称/描述..." style="width:180px;" onkeydown="if(event.key==='Enter')loadInterface(1)">
                     <select id="interfaceMethod" style="height:38px;border:1px solid var(--border-color);border-radius:6px;padding:0 8px;font-size:13px;background:var(--input-bg);color:var(--text-primary);outline:none;cursor:pointer;">
                         <option value="">全部方法</option>
                         <option value="GET">GET</option>
@@ -78,7 +78,7 @@
         var keyword = document.getElementById('interfaceKeyword') ? document.getElementById('interfaceKeyword').value : '';
         var method = document.getElementById('interfaceMethod') ? document.getElementById('interfaceMethod').value : '';
         var env = document.getElementById('interfaceEnv') ? document.getElementById('interfaceEnv').value : '';
-        var url = '/api/interface/page?pageNum=' + page + '&pageSize=10&keyword=' + encodeURIComponent(keyword);
+        var url = getProjectApi('/interface/page?pageNum=' + page + '&pageSize=10&keyword=' + encodeURIComponent(keyword));
         if (method) url += '&method=' + encodeURIComponent(method);
         if (env) url += '&env=' + encodeURIComponent(env);
         ajax({
@@ -140,7 +140,7 @@
         if (!container || container.innerHTML) return;
         container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
         ajax({
-            url: '/api/interface/' + id + '/detail',
+            url: getProjectApi('/interface/' + id + '/detail'),
             success: function(res) {
                 if (res.code !== 200) { container.innerHTML = '<div style="color:#ef5350;">加载失败</div>'; return; }
                 var iface = res.data.interface;
@@ -200,7 +200,7 @@
         layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除选中的 ' + ifaceSelectedIds.length + ' 个接口？', { icon: 3, title: '批量删除' }, function(index) {
             var done = 0, total = ifaceSelectedIds.length;
             ifaceSelectedIds.forEach(function(id) {
-                ajax({ url: '/api/interface/' + id, method: 'DELETE', success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已删除 ' + total + ' 个接口', {icon:1}); loadInterface(1); } } });
+                ajax({ url: getProjectApi('/interface/' + id), method: 'DELETE', success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已删除 ' + total + ' 个接口', {icon:1}); loadInterface(1); } } });
             });
         });
     }
@@ -211,10 +211,10 @@
         layer.confirm('确定' + text + '选中的 ' + ifaceSelectedIds.length + ' 个接口？', { icon: 3 }, function(index) {
             var done = 0, total = ifaceSelectedIds.length;
             ifaceSelectedIds.forEach(function(id) {
-                ajax({ url: '/api/interface/' + id, success: function(res) {
+                ajax({ url: getProjectApi('/interface/' + id), success: function(res) {
                     if (res.code === 200) {
                         var obj = res.data; obj.enabled = enabled;
-                        ajax({ url: '/api/interface', method: 'PUT', contentType: 'application/json', data: JSON.stringify(obj), success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已' + text + ' ' + total + ' 个接口', {icon:1}); loadInterface(1); } } });
+                        ajax({ url: getProjectApi('/interface'), method: 'PUT', contentType: 'application/json', data: JSON.stringify(obj), success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已' + text + ' ' + total + ' 个接口', {icon:1}); loadInterface(1); } } });
                     } else { done++; if (done >= total) { layer.close(index); loadInterface(1); } }
                 }});
             });
@@ -333,7 +333,7 @@
             }
             if (isEdit) obj.id = d.id;
             ajax({
-                url: '/api/interface', method: isEdit ? 'PUT' : 'POST',
+                url: getProjectApi('/interface'), method: isEdit ? 'PUT' : 'POST',
                 contentType: 'application/json', data: JSON.stringify(obj),
                 success: function(res) {
                     if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadInterface(1); }
@@ -344,12 +344,12 @@
     }
 
     function editInterface(id) {
-        ajax({ url: '/api/interface/' + id, success: function(res) { if (res.code === 200) showInterfaceForm(res.data); } });
+        ajax({ url: getProjectApi('/interface/' + id), success: function(res) { if (res.code === 200) showInterfaceForm(res.data); } });
     }
 
     function deleteInterface(id) {
         layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除该接口？<br><small style="color:#999;">关联的测试用例也会被删除</small>', { icon: 3, title: '确认' }, function(index) {
-            ajax({ url: '/api/interface/' + id, method: 'DELETE',
+            ajax({ url: getProjectApi('/interface/' + id), method: 'DELETE',
                 success: function(res) {
                     if (res.code === 200) { layer.close(index); layer.msg('已删除', {icon:1}); loadInterface(1); }
                     else { layer.msg(res.msg, {icon:2}); }
@@ -368,7 +368,7 @@
     function runOnlineTest(testcaseId, caseTitle, env) {
         var loadingIdx = layer.load(1, {shade: [0.2, '#000']});
         ajax({
-            url: '/api/online-test/execute',
+            url: getProjectApi('/online-test/execute'),
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ testcaseId: testcaseId, env: env }),
@@ -515,7 +515,7 @@
 
     function loadIfaceAllData() {
         ajax({
-            url: '/api/interface/page?pageNum=1&pageSize=9999',
+            url: getProjectApi('/interface/page?pageNum=1&pageSize=9999'),
             success: function(res) {
                 if (res.code !== 200) return;
                 ifaceAllData = res.data.records || [];

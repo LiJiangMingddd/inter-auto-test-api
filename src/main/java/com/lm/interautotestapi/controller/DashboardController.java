@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/project/{projectId}/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
 
@@ -26,14 +26,18 @@ public class DashboardController {
 
     @GetMapping("/stats")
     @SaCheckPermission("api:manage")
-    public Result<Map<String, Object>> stats() {
+    public Result<Map<String, Object>> stats(@PathVariable Long projectId) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        long totalInterfaces = apiInterfaceService.count();
-        long totalTestcases = apiTestcaseService.count();
+        long totalInterfaces = apiInterfaceService.count(
+                new LambdaQueryWrapper<ApiInterface>().eq(ApiInterface::getProjectId, projectId));
+        long totalTestcases = apiTestcaseService.count(
+                new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getProjectId, projectId));
         long totalUsers = sysUserService.count();
         long enabledInterfaces = apiInterfaceService.count(
-                new LambdaQueryWrapper<ApiInterface>().eq(ApiInterface::getEnabled, 1));
+                new LambdaQueryWrapper<ApiInterface>()
+                        .eq(ApiInterface::getProjectId, projectId)
+                        .eq(ApiInterface::getEnabled, 1));
 
         result.put("totalInterfaces", totalInterfaces);
         result.put("totalTestcases", totalTestcases);
@@ -42,6 +46,7 @@ public class DashboardController {
 
         List<ApiInterface> allInterfaces = apiInterfaceService.list(
                 new LambdaQueryWrapper<ApiInterface>()
+                        .eq(ApiInterface::getProjectId, projectId)
                         .select(ApiInterface::getId, ApiInterface::getApiName, ApiInterface::getMethod)
                         .orderByDesc(ApiInterface::getId));
         List<Long> interfaceIds = allInterfaces.stream().map(ApiInterface::getId).collect(Collectors.toList());
@@ -86,11 +91,17 @@ public class DashboardController {
         result.put("chartIds", chartIds);
 
         long devCount = apiTestcaseService.count(
-                new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getEnv, "dev"));
+                new LambdaQueryWrapper<ApiTestcase>()
+                        .eq(ApiTestcase::getProjectId, projectId)
+                        .eq(ApiTestcase::getEnv, "dev"));
         long uatCount = apiTestcaseService.count(
-                new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getEnv, "uat"));
+                new LambdaQueryWrapper<ApiTestcase>()
+                        .eq(ApiTestcase::getProjectId, projectId)
+                        .eq(ApiTestcase::getEnv, "uat"));
         long proCount = apiTestcaseService.count(
-                new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getEnv, "pro"));
+                new LambdaQueryWrapper<ApiTestcase>()
+                        .eq(ApiTestcase::getProjectId, projectId)
+                        .eq(ApiTestcase::getEnv, "pro"));
         result.put("envDev", devCount);
         result.put("envUat", uatCount);
         result.put("envPro", proCount);

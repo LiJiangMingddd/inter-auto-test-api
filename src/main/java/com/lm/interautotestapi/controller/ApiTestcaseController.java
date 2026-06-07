@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/testcase")
+@RequestMapping("/api/project/{projectId}/testcase")
 @RequiredArgsConstructor
 public class ApiTestcaseController {
 
@@ -18,12 +18,14 @@ public class ApiTestcaseController {
 
     @GetMapping("/page")
     @SaCheckPermission("case:manage")
-    public Result<Page<ApiTestcase>> page(@RequestParam(defaultValue = "1") int pageNum,
+    public Result<Page<ApiTestcase>> page(@PathVariable Long projectId,
+                                          @RequestParam(defaultValue = "1") int pageNum,
                                           @RequestParam(defaultValue = "10") int pageSize,
                                           @RequestParam(required = false) String keyword,
                                           @RequestParam(required = false) String env) {
         Page<ApiTestcase> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<ApiTestcase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiTestcase::getProjectId, projectId);
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.like(ApiTestcase::getCaseTitle, keyword);
         }
@@ -36,27 +38,29 @@ public class ApiTestcaseController {
 
     @GetMapping("/{id}")
     @SaCheckPermission("case:manage")
-    public Result<ApiTestcase> getById(@PathVariable Long id) {
+    public Result<ApiTestcase> getById(@PathVariable Long projectId, @PathVariable Long id) {
         return Result.ok(apiTestcaseService.getById(id));
     }
 
     @PostMapping
     @SaCheckPermission("case:manage")
-    public Result<Void> save(@RequestBody ApiTestcase apiTestcase) {
+    public Result<Void> save(@PathVariable Long projectId, @RequestBody ApiTestcase apiTestcase) {
+        apiTestcase.setProjectId(projectId);
         apiTestcaseService.save(apiTestcase);
         return Result.ok();
     }
 
     @PutMapping
     @SaCheckPermission("case:manage")
-    public Result<Void> update(@RequestBody ApiTestcase apiTestcase) {
+    public Result<Void> update(@PathVariable Long projectId, @RequestBody ApiTestcase apiTestcase) {
+        apiTestcase.setProjectId(projectId);
         apiTestcaseService.updateById(apiTestcase);
         return Result.ok();
     }
 
     @DeleteMapping("/{id}")
     @SaCheckPermission("case:manage")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Void> delete(@PathVariable Long projectId, @PathVariable Long id) {
         apiTestcaseService.removeById(id);
         return Result.ok();
     }

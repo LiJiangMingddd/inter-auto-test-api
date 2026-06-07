@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-<!-- ============================================================
-     权限管理页面碎片
-     ============================================================ -->
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="permission-page">
@@ -10,7 +7,7 @@
             <h3><i class="fas fa-shield-halved"></i> 权限列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="permKeyword" placeholder="搜索权限名称/编码..." style="width:200px;">
+                    <input class="layui-input" id="permKeyword" placeholder="搜索权限名称/编码..." style="width:200px;" onkeydown="if(event.key==='Enter')loadPermission(1)">
                     <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadPermission(1)">
                         <i class="fas fa-search"></i> 搜索
                     </button>
@@ -23,10 +20,10 @@
         <table class="layui-table" lay-skin="line" style="table-layout:auto;">
             <thead>
             <tr>
-                <th style="width:55px;">ID</th>
                 <th style="min-width:80px;">权限名称</th>
                 <th style="min-width:90px;">权限编码</th>
                 <th style="min-width:80px;">关联URL</th>
+                <th style="width:70px;">父级权限</th>
                 <th style="width:55px;">排序</th>
                 <th class="ops-cell">操作</th>
             </tr>
@@ -37,11 +34,8 @@
     </div>
 
     <script>
-    // ============================================================
-    //  权限 CRUD
-    // ============================================================
+    var permAllCache = [];
 
-    /** 加载权限列表 */
     function loadPermission(page) {
         var keyword = document.getElementById('permKeyword') ? document.getElementById('permKeyword').value : '';
         ajax({
@@ -49,12 +43,16 @@
             success: function(res) {
                 if (res.code !== 200) { layer.msg(res.msg); return; }
                 var data = res.data, html = '';
-                (data.records || []).forEach(function(item, i) {
+                var records = data.records || [];
+                var idNameMap = {};
+                records.forEach(function(item) { idNameMap[item.id] = item.permName; });
+                records.forEach(function(item, i) {
+                    var parentName = item.parentId && item.parentId !== 0 ? (idNameMap[item.parentId] || 'ID:' + item.parentId) : '-';
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td>' + item.id + '</td>' +
-                        '<td><span class="cell-tip"><strong>' + escHtml(item.permName) + '</strong>' + (item.parentId && item.parentId !== 0 ? '<span class="tip-content">' + escHtml(item.permName) + '（父ID: ' + item.parentId + '）</span>' : '<span class="tip-content">' + escHtml(item.permName) + '</span>') + '</span></td>' +
+                        '<td><span class="cell-tip"><strong>' + escHtml(item.permName) + '</strong><span class="tip-content">' + escHtml(item.permName) + '</span></span></td>' +
                         '<td><code style="background:var(--code-bg);padding:2px 8px;border-radius:4px;color:var(--code-text);">' + escHtml(item.permCode) + '</code></td>' +
                         '<td><span class="cell-tip"><small style="color:#999;">' + escHtml(item.permUrl||'-') + '</small><span class="tip-content">' + escHtml(item.permUrl||'-') + '</span></span></td>' +
+                        '<td><span style="color:var(--text-secondary);">' + escHtml(parentName) + '</span></td>' +
                         '<td>' + (item.sortOrder||0) + '</td>' +
                         '<td class="ops-cell">' +
                         '<button class="action-btn edit" onclick="editPermission(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button>' +
@@ -70,11 +68,27 @@
         });
     }
 
-    /** 打开权限表单弹窗 */
     function showPermissionForm(data) {
         var isEdit = !!data;
         var title = isEdit ? '编辑权限' : '新增权限';
         var d = data || {};
+
+        var parentSelectHtml = '<select id="f_perm_parent" class="layui-input"><option value="0">无（顶级权限）</option>';
+        ajax({
+            url: '/api/permission/all',
+            async: false,
+            success: function(res) {
+                if (res.code === 200 && res.data) {
+                    permAllCache = res.data;
+                    res.data.forEach(function(p) {
+                        if (isEdit && p.id === d.id) return;
+                        var selected = (d.parentId && d.parentId === p.id) ? ' selected' : '';
+                        parentSelectHtml += '<option value="' + p.id + '"' + selected + '>' + escHtml(p.permName) + '（' + escHtml(p.permCode) + '）</option>';
+                    });
+                }
+            }
+        });
+        parentSelectHtml += '</select>';
 
         var html =
             '<div style="padding:24px 28px;">' +
@@ -82,11 +96,11 @@
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-tag"></i> 名称</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_name" class="layui-input" value="' + escHtml(d.permName||'') + '" placeholder="如：接口管理"></div></div>' +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-code"></i> 编码</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_code" class="layui-input" value="' + escHtml(d.permCode||'') + '" placeholder="如：api:manage"></div></div>' +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-link"></i> URL</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_url" class="layui-input" value="' + escHtml(d.permUrl||'') + '" placeholder="可选"></div></div>' +
-            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sitemap"></i> 父ID</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_parent" class="layui-input" value="' + (d.parentId||0) + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sitemap"></i> 父级</label><div class="layui-input-block" style="margin-left:110px;">' + parentSelectHtml + '</div></div>' +
             '<div class="layui-form-item"><label class="layui-form-label" style="width:90px;"><i class="fas fa-sort-numeric-up"></i> 排序</label><div class="layui-input-block" style="margin-left:110px;"><input id="f_perm_sort" class="layui-input" value="' + (d.sortOrder||0) + '"></div></div>' +
             '</div></div>';
 
-        openLayer(title, html, ['500px', '320px'], function(index) {
+        openLayer(title, html, ['500px', '340px'], function(index) {
             var obj = {
                 permName: document.getElementById('f_perm_name').value,
                 permCode: document.getElementById('f_perm_code').value,

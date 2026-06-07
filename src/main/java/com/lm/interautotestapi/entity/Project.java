@@ -6,29 +6,21 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("api_interface")
-public class ApiInterface {
+@TableName("project")
+public class Project {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long projectId;
+    private String projectName;
 
-    private String apiName;
+    private String projectCode;
 
-    private String apiInfo;
+    private String description;
 
-    private String urlDev;
+    private Long ownerId;
 
-    private String urlUat;
-
-    private String urlPro;
-
-    private String method;
-
-    private String serviceCode;
-
-    private Integer enabled;
+    private Integer status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
@@ -37,5 +29,11 @@ public class ApiInterface {
     private LocalDateTime updatedAt;
 
     @TableField(exist = false)
-    private Integer testcaseCount;
+    private String ownerName;
+
+    @TableField(exist = false)
+    private Integer memberCount;
+
+    @TableField(exist = false)
+    private Integer interfaceCount;
 }

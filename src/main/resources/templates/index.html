@@ -471,6 +471,28 @@
             border-color: #667eea !important;
         }
 
+        /* ===== 弹窗内原生 select 修复（layui-form 会隐藏原生 select） ===== */
+        .layui-layer-content .layui-form select {
+            display: block !important;
+            -webkit-appearance: menulist !important;
+            -moz-appearance: menulist !important;
+            appearance: menulist !important;
+            width: 100% !important;
+            height: 38px !important;
+            padding: 0 12px !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 6px !important;
+            font-size: 13px !important;
+            background: var(--input-bg) !important;
+            color: var(--text-primary) !important;
+            outline: none !important;
+            cursor: pointer !important;
+        }
+        .layui-layer-content .layui-form select option {
+            background: var(--layer-bg);
+            color: var(--text-primary);
+        }
+
         /* ===== Layui 下拉选择框暗色适配 ===== */
         .layui-form-select .layui-input {
             background: var(--input-bg) !important;
@@ -736,6 +758,15 @@
             background: #ffffff;
             color: #333;
         }
+        [data-theme="light"] .layui-layer-content .layui-form select {
+            background: #ffffff !important;
+            color: #333 !important;
+            border-color: #e8e8e8 !important;
+        }
+        [data-theme="light"] .layui-layer-content .layui-form select option {
+            background: #ffffff;
+            color: #333;
+        }
 
         /* ===== 白天模式弹窗按钮修复 ===== */
         [data-theme="light"] .layui-layer-btn a {
@@ -918,30 +949,38 @@
            ================================================================ */
         .global-search { position: relative; display: flex; align-items: center; }
         .global-search input {
-            width: 220px; height: 34px; border-radius: 17px;
+            width: 260px; height: 36px; border-radius: 18px;
             background: var(--input-bg); border: 1px solid var(--border-color);
-            color: var(--text-primary); padding: 0 14px 0 36px;
+            color: var(--text-primary); padding: 0 66px 0 36px;
             font-size: 13px; outline: none;
-            transition: all 0.3s;
+            transition: all 0.35s cubic-bezier(.4,0,.2,1);
+        }
+        .global-search input::placeholder {
+            color: var(--text-muted);
+            opacity: .7;
         }
         .global-search input:focus {
-            width: 300px; border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+            width: 320px; border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102,126,234,.18);
+            transform: translateY(-1px);
         }
-        .global-search input::placeholder { color: var(--text-muted); }
         .global-search .gs-icon {
             position: absolute; left: 12px;
-            color: var(--text-muted); font-size: 13px;
+            color: var(--text-muted); font-size: 14px;
             pointer-events: none;
+            transition: color .3s;
         }
+        .global-search:focus-within .gs-icon { color: #667eea; }
         .global-search .gs-shortcut {
             position: absolute; right: 10px;
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 4px; padding: 1px 6px;
+            background: var(--bg-card-hover); border: 1px solid var(--border-light);
+            border-radius: 6px; padding: 2px 7px;
             font-size: 10px; color: var(--text-muted);
             pointer-events: none;
+            opacity: .8;
+            transition: opacity .3s;
         }
-        .global-search input:focus ~ .gs-shortcut { display: none; }
+        .global-search input:focus ~ .gs-shortcut { opacity: 0; }
         .search-dropdown {
             position: absolute; top: calc(100% + 8px); left: 0;
             width: 400px; background: var(--layer-bg);
@@ -1160,6 +1199,42 @@
             transform: translateY(0);
         }
         .virtual-scroll-viewport table { margin: 0; }
+
+        /* ================================================================
+           项目切换器
+           ================================================================ */
+        .project-selector {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 4px 8px 4px 12px;
+            transition: all 0.3s cubic-bezier(.4,0,.2,1);
+            cursor: pointer;
+        }
+        .project-selector:hover {
+            border-color: rgba(102,126,234,.4);
+            background: var(--bg-card-hover);
+        }
+        .project-selector:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+            transform: translateY(-1px);
+        }
+        .project-selector .ps-icon { color: #667eea; font-size: 14px; flex-shrink: 0; transition: transform .3s; }
+        .project-selector:focus-within .ps-icon { transform: scale(1.1); }
+        .project-select {
+            min-width: 140px; height: 30px; border: none; outline: none;
+            background: transparent; color: var(--text-primary); font-size: 13px;
+            cursor: pointer; font-family: inherit; font-weight: 500;
+        }
+        .project-select option { background: var(--layer-bg); color: var(--text-primary); }
+        .ps-refresh-btn {
+            width: 28px; height: 28px; border: none; border-radius: 6px;
+            background: transparent; color: var(--text-muted); cursor: pointer;
+            font-size: 12px; transition: all .25s; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .ps-refresh-btn:hover { background: rgba(102,126,234,.12); color: #667eea; transform: rotate(30deg); }
     </style>
 </head>
 <body>
@@ -1181,10 +1256,10 @@
                 <div class="nav-section-title">
                     <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 业务管理
                 </div>
-                <div class="nav-item" data-tab="interface" onclick="switchTab('interface')">
+                <div class="nav-item" data-tab="interface" data-perm="api:manage" onclick="switchTab('interface')">
                     <i class="fas fa-plug"></i><span>接口管理</span><span class="nav-tooltip">接口管理</span>
                 </div>
-                <div class="nav-item" data-tab="testcase" onclick="switchTab('testcase')">
+                <div class="nav-item" data-tab="testcase" data-perm="case:manage" onclick="switchTab('testcase')">
                     <i class="fas fa-vial"></i><span>用例管理</span><span class="nav-tooltip">用例管理</span>
                 </div>
                 <div class="nav-item" data-tab="dify" onclick="switchTab('dify')">
@@ -1220,13 +1295,16 @@
                 <div class="nav-section-title">
                     <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 系统管理
                 </div>
-                <div class="nav-item" data-tab="user" onclick="switchTab('user')">
+                <div class="nav-item" data-tab="project" data-perm="user:manage" onclick="switchTab('project')">
+                    <i class="fas fa-folder-tree"></i><span>项目管理</span><span class="nav-tooltip">项目管理</span>
+                </div>
+                <div class="nav-item" data-tab="user" data-perm="user:manage" onclick="switchTab('user')">
                     <i class="fas fa-users"></i><span>用户管理</span><span class="nav-tooltip">用户管理</span>
                 </div>
-                <div class="nav-item" data-tab="role" onclick="switchTab('role')">
+                <div class="nav-item" data-tab="role" data-perm="role:manage" onclick="switchTab('role')">
                     <i class="fas fa-user-tag"></i><span>角色管理</span><span class="nav-tooltip">角色管理</span>
                 </div>
-                <div class="nav-item" data-tab="permission" onclick="switchTab('permission')">
+                <div class="nav-item" data-tab="permission" data-perm="perm:manage" onclick="switchTab('permission')">
                     <i class="fas fa-shield-halved"></i><span>权限管理</span><span class="nav-tooltip">权限管理</span>
                 </div>
             </div>
@@ -1241,9 +1319,19 @@
                 <span class="page-title" id="pageTitle"><i class="fas fa-chart-pie"></i> 数据统计</span>
             </div>
             <div class="topbar-right">
+                <!-- 项目切换器 -->
+                <div class="project-selector" id="projectSelector">
+                    <i class="fas fa-folder-tree ps-icon"></i>
+                    <select id="projectSelect" onchange="onProjectChange()" class="project-select">
+                        <option value="">加载中...</option>
+                    </select>
+                    <button class="ps-refresh-btn" onclick="refreshProjects()" title="刷新项目列表">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
                 <div class="global-search">
                     <i class="fas fa-search gs-icon"></i>
-                    <input type="text" id="globalSearchInput" placeholder="搜索接口、用例、用户..." autocomplete="off" oninput="onGlobalSearch(this.value)" onfocus="onGlobalSearch(this.value)" onkeydown="onSearchKeydown(event)">
+                    <input type="text" id="globalSearchInput" placeholder="搜索接口、用例、用户... (Ctrl+K)" autocomplete="off" oninput="onGlobalSearch(this.value)" onfocus="onGlobalSearch(this.value)" onkeydown="onSearchKeydown(event)">
                     <span class="gs-shortcut">Ctrl+K</span>
                     <div class="search-dropdown" id="searchDropdown"></div>
                 </div>
@@ -1321,6 +1409,40 @@
             <!-- 权限管理 -->
             <div class="page-panel" id="panel-permission" th:insert="pages/permission :: permission-page"></div>
 
+            <!-- 项目管理 -->
+            <div class="page-panel" id="panel-project">
+                <div class="card card-stagger card-glow">
+                    <div class="glow-spot"></div>
+                    <div class="card-header">
+                        <h3><i class="fas fa-folder-tree"></i> 项目列表</h3>
+                        <div class="toolbar">
+                            <button class="layui-btn layui-btn-normal" onclick="showProjectForm(null)" style="border-radius:8px;"><i class="fas fa-plus"></i> 新建项目</button>
+                            <div class="search-bar">
+                                <input type="text" id="projectKeyword" class="layui-input" placeholder="搜索项目名称/编码" style="width:200px;">
+                                <button class="layui-btn layui-btn-primary" onclick="loadProject(1)" style="border-radius:8px;"><i class="fas fa-search"></i> 搜索</button>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="layui-table" lay-skin="line" id="projectTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>项目名称</th>
+                                <th>项目编码</th>
+                                <th>描述</th>
+                                <th>负责人</th>
+                                <th>成员数</th>
+                                <th>接口数</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectTbody"></tbody>
+                    </table>
+                    <div id="projectPager"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -1335,6 +1457,8 @@
     // ============================================================
     var token = localStorage.getItem('token');
     var currentTab = 'dashboard';
+    var currentProjectId = null;
+    var projectList = [];
     var layer, $;
 
     // 未登录时跳转到登录页
@@ -1592,38 +1716,74 @@
         searchDebounceTimer = setTimeout(function() {
             var items = [];
             var done = 0;
+            var totalRequests = 5;
             function renderResults() {
                 done++;
-                if (done < 2) return;
+                if (done < totalRequests) return;
                 var html = '';
                 if (items.length === 0) {
                     html = '<div class="sd-empty"><i class="fas fa-search" style="font-size:20px;display:block;margin-bottom:8px;"></i>未找到相关结果</div>';
                 } else {
-                    var ifaces = items.filter(function(x) { return x.type === 'iface'; });
-                    var tcs = items.filter(function(x) { return x.type === 'tc'; });
-                    if (ifaces.length > 0) {
-                        html += '<div class="sd-header"><i class="fas fa-plug"></i> 接口</div>';
-                        ifaces.forEach(function(item) {
-                            html += '<div class="sd-item" onclick="switchTab(\'interface\');closeSearch()"><div class="sd-icon iface"><i class="fas fa-plug"></i></div><div class="sd-text"><div class="sd-name">' + escHtml(item.name) + '</div><div class="sd-desc">' + escHtml(item.desc) + '</div></div></div>';
-                        });
-                    }
-                    if (tcs.length > 0) {
-                        html += '<div class="sd-header"><i class="fas fa-vial"></i> 用例</div>';
-                        tcs.forEach(function(item) {
-                            html += '<div class="sd-item" onclick="switchTab(\'testcase\');closeSearch()"><div class="sd-icon tc"><i class="fas fa-vial"></i></div><div class="sd-text"><div class="sd-name">' + escHtml(item.name) + '</div><div class="sd-desc">' + escHtml(item.desc) + '</div></div></div>';
-                        });
-                    }
+                    var groups = [
+                        { key: 'iface', label: '接口', icon: 'fas fa-plug', tab: 'interface', color: '#64b5f6' },
+                        { key: 'tc', label: '用例', icon: 'fas fa-vial', tab: 'testcase', color: '#66bb6a' },
+                        { key: 'user', label: '用户', icon: 'fas fa-user', tab: 'user', color: '#ffa726' },
+                        { key: 'role', label: '角色', icon: 'fas fa-user-tag', tab: 'role', color: '#ab47bc' },
+                        { key: 'perm', label: '权限', icon: 'fas fa-shield-halved', tab: 'permission', color: '#ef5350' }
+                    ];
+                    groups.forEach(function(g) {
+                        var groupItems = items.filter(function(x) { return x.type === g.key; });
+                        if (groupItems.length > 0) {
+                            html += '<div class="sd-header"><i class="' + g.icon + '" style="color:' + g.color + ';"></i> ' + g.label + '</div>';
+                            groupItems.forEach(function(item) {
+                                var searchKeyword = keyword;
+                                html += '<div class="sd-item" onclick="searchAndSwitchTab(\'' + g.tab + '\',\'' + escHtml(searchKeyword).replace(/'/g, "\\'") + '\')"><div class="sd-icon" style="background:' + g.color + '22;color:' + g.color + ';"><i class="' + g.icon + '"></i></div><div class="sd-text"><div class="sd-name">' + escHtml(item.name) + '</div><div class="sd-desc">' + escHtml(item.desc) + '</div></div></div>';
+                            });
+                        }
+                    });
                 }
                 dropdown.innerHTML = html;
                 dropdown.classList.add('show');
             }
+            var ifaceApi = getProjectApi('/interface/page?pageNum=1&pageSize=5&keyword=');
+            if (ifaceApi) {
+                $.ajax({
+                    url: ifaceApi + encodeURIComponent(keyword),
+                    headers: { 'Authorization': token },
+                    success: function(res) {
+                        if (res && res.code === 200 && res.data && res.data.records) {
+                            res.data.records.forEach(function(item) {
+                                items.push({ type: 'iface', name: item.apiName, desc: item.method + ' ' + (item.urlDev || item.urlUat || item.urlPro || ''), id: item.id });
+                            });
+                        }
+                        renderResults();
+                    },
+                    error: function() { renderResults(); }
+                });
+            } else { renderResults(); }
+            var tcApi = getProjectApi('/testcase/page?pageNum=1&pageSize=5&keyword=');
+            if (tcApi) {
+                $.ajax({
+                    url: tcApi + encodeURIComponent(keyword),
+                    headers: { 'Authorization': token },
+                    success: function(res) {
+                        if (res && res.code === 200 && res.data && res.data.records) {
+                            res.data.records.forEach(function(item) {
+                                items.push({ type: 'tc', name: item.caseTitle, desc: '环境: ' + (item.env || '-').toUpperCase(), id: item.id });
+                            });
+                        }
+                        renderResults();
+                    },
+                    error: function() { renderResults(); }
+                });
+            } else { renderResults(); }
             $.ajax({
-                url: '/api/interface/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
+                url: '/api/user/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
                 headers: { 'Authorization': token },
                 success: function(res) {
                     if (res && res.code === 200 && res.data && res.data.records) {
                         res.data.records.forEach(function(item) {
-                            items.push({ type: 'iface', name: item.apiName, desc: item.method + ' ' + (item.urlDev || item.urlUat || item.urlPro || ''), id: item.id });
+                            items.push({ type: 'user', name: item.username, desc: item.nickname || item.email || '-', id: item.id });
                         });
                     }
                     renderResults();
@@ -1631,12 +1791,25 @@
                 error: function() { renderResults(); }
             });
             $.ajax({
-                url: '/api/testcase/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
+                url: '/api/role/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
                 headers: { 'Authorization': token },
                 success: function(res) {
                     if (res && res.code === 200 && res.data && res.data.records) {
                         res.data.records.forEach(function(item) {
-                            items.push({ type: 'tc', name: item.caseTitle, desc: '环境: ' + (item.env || '-').toUpperCase(), id: item.id });
+                            items.push({ type: 'role', name: item.roleName, desc: item.roleCode, id: item.id });
+                        });
+                    }
+                    renderResults();
+                },
+                error: function() { renderResults(); }
+            });
+            $.ajax({
+                url: '/api/permission/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
+                headers: { 'Authorization': token },
+                success: function(res) {
+                    if (res && res.code === 200 && res.data && res.data.records) {
+                        res.data.records.forEach(function(item) {
+                            items.push({ type: 'perm', name: item.permName, desc: item.permCode, id: item.id });
                         });
                     }
                     renderResults();
@@ -1644,6 +1817,31 @@
                 error: function() { renderResults(); }
             });
         }, 300);
+    }
+    function searchAndSwitchTab(tab, keyword) {
+        closeSearch();
+        switchTab(tab);
+        setTimeout(function() {
+            var inputId = {
+                interface: 'interfaceKeyword',
+                testcase: 'tcKeyword',
+                user: 'userKeyword',
+                role: 'roleKeyword',
+                permission: 'permKeyword'
+            }[tab];
+            var input = document.getElementById(inputId);
+            if (input) {
+                input.value = keyword;
+                var loaders = {
+                    interface: typeof loadInterface === 'function' ? loadInterface : null,
+                    testcase: typeof loadTestcase === 'function' ? loadTestcase : null,
+                    user: typeof loadUser === 'function' ? loadUser : null,
+                    role: typeof loadRole === 'function' ? loadRole : null,
+                    permission: typeof loadPermission === 'function' ? loadPermission : null
+                };
+                if (loaders[tab]) loaders[tab](1);
+            }
+        }, 500);
     }
     function closeSearch() {
         document.getElementById('searchDropdown').classList.remove('show');
@@ -1733,11 +1931,17 @@
             el.classList.toggle('active', el.id === 'panel-' + tab);
         });
         // 更新顶部标题
+        var projectName = '';
+        if (window.currentProjectId && window.projectList) {
+            var p = window.projectList.find(function(item) { return item.id === window.currentProjectId; });
+            if (p) projectName = p.projectName;
+        }
         var titles = {
-            interface: '<i class="fas fa-plug"></i> 接口管理',
-            testcase: '<i class="fas fa-vial"></i> 用例管理',
-            dify: '<i class="fas fa-robot"></i> Dify 工作流',
-            dashboard: '<i class="fas fa-chart-pie"></i> 数据统计',
+            interface: '<i class="fas fa-plug"></i> 接口管理' + (projectName ? ' <span style="font-size:12px;opacity:.6;font-weight:400;">— ' + escHtml(projectName) + '</span>' : ''),
+            testcase: '<i class="fas fa-vial"></i> 用例管理' + (projectName ? ' <span style="font-size:12px;opacity:.6;font-weight:400;">— ' + escHtml(projectName) + '</span>' : ''),
+            dify: '<i class="fas fa-robot"></i> Dify 工作流' + (projectName ? ' <span style="font-size:12px;opacity:.6;font-weight:400;">— ' + escHtml(projectName) + '</span>' : ''),
+            dashboard: '<i class="fas fa-chart-pie"></i> 数据统计' + (projectName ? ' <span style="font-size:12px;opacity:.6;font-weight:400;">— ' + escHtml(projectName) + '</span>' : ''),
+            project: '<i class="fas fa-folder-tree"></i> 项目管理',
             user: '<i class="fas fa-users"></i> 用户管理',
             role: '<i class="fas fa-user-tag"></i> 角色管理',
             permission: '<i class="fas fa-shield-halved"></i> 权限管理',
@@ -1748,7 +1952,7 @@
         document.getElementById('pageTitle').innerHTML = titles[tab] || tab;
         updateBreadcrumb(tab);
         // 触发对应页面数据加载
-        var loaders = { interface: loadInterface, testcase: loadTestcase, dify: null, dashboard: loadDashboard, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme', guide: null };
+        var loaders = { interface: loadInterface, testcase: loadTestcase, dify: null, dashboard: loadDashboard, project: loadProject, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme', guide: null };
         if (loaders[tab]) {
             if (loaders[tab] === 'readme') {
                 setTimeout(function() {
@@ -1775,6 +1979,380 @@
                 complete: function() {
                     localStorage.removeItem('token');
                     window.location.href = '/login';
+                }
+            });
+            layer.close(index);
+        });
+    }
+
+    // ============================================================
+    //  侧边栏权限控制：无权限时隐藏菜单
+    // ============================================================
+    function applySidebarPermissions(perms) {
+        document.querySelectorAll('.nav-item[data-perm]').forEach(function(el) {
+            var requiredPerm = el.getAttribute('data-perm');
+            if (requiredPerm && perms.indexOf(requiredPerm) === -1) {
+                el.style.display = 'none';
+            } else {
+                el.style.display = '';
+            }
+        });
+        // 自动隐藏空的 nav-section
+        document.querySelectorAll('.nav-section').forEach(function(section) {
+            var visibleItems = section.querySelectorAll('.nav-item[style*="display: none"]');
+            var allItems = section.querySelectorAll('.nav-item');
+            if (visibleItems.length === allItems.length && allItems.length > 0) {
+                section.style.display = 'none';
+            } else {
+                section.style.display = '';
+            }
+        });
+    }
+
+    // ============================================================
+    //  用户选择器：弹窗搜索选择用户
+    // ============================================================
+    function showUserSelector(callback) {
+        var html =
+            '<div style="padding:16px 20px;">' +
+            '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+            '<input type="text" id="us_keyword" class="layui-input" placeholder="搜索用户..." style="flex:1;" onkeyup="if(event.key===\'Enter\') loadUserSelector()">' +
+            '<button class="layui-btn layui-btn-sm" onclick="loadUserSelector()" style="border-radius:6px;"><i class="fas fa-search"></i></button>' +
+            '</div>' +
+            '<div id="us_list" style="max-height:350px;overflow-y:auto;">' +
+            '<div style="text-align:center;color:var(--text-muted);padding:30px;">加载中...</div>' +
+            '</div>' +
+            '</div>';
+
+        var idx = layer.open({
+            type: 1,
+            title: '<i class="fas fa-user"></i> 选择用户',
+            area: ['520px', '480px'],
+            content: html,
+            shadeClose: true,
+            success: function() {
+                loadUserSelector(callback);
+            }
+        });
+        // 保存弹窗索引，关闭时只关自己
+        window._usLayerIndex = idx;
+    }
+
+    function loadUserSelector(callback) {
+        var keyword = document.getElementById('us_keyword') ? document.getElementById('us_keyword').value : '';
+        ajax({
+            url: '/api/user/search?keyword=' + encodeURIComponent(keyword) + '&limit=50',
+            method: 'GET',
+            success: function(res) {
+                var container = document.getElementById('us_list');
+                if (!container) return;
+                if (res.code === 200 && res.data && res.data.length > 0) {
+                    var html = '<table class="layui-table" lay-skin="line"><thead><tr><th>用户名</th><th>昵称</th><th>邮箱</th><th>操作</th></tr></thead><tbody>';
+                    res.data.forEach(function(u) {
+                        html += '<tr style="cursor:pointer;" onclick="selectUser(' + u.id + ',\'' + escHtml(u.username).replace(/'/g, "\\'") + '\',\'' + escHtml(u.nickname || '').replace(/'/g, "\\'") + '\')">';
+                        html += '<td><strong>' + escHtml(u.username) + '</strong></td>';
+                        html += '<td>' + escHtml(u.nickname || '-') + '</td>';
+                        html += '<td>' + escHtml(u.email || '-') + '</td>';
+                        html += '<td><button class="layui-btn layui-btn-xs layui-btn-normal" style="border-radius:4px;">选择</button></td>';
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                    // 保存回调
+                    container.dataset.callback = callback ? 'yes' : '';
+                    window._usCallback = callback;
+                } else {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px;"><i class="fas fa-users" style="font-size:24px;display:block;margin-bottom:8px;"></i>未找到用户</div>';
+                }
+            }
+        });
+    }
+
+    function selectUser(userId, username, nickname) {
+        var cb = window._usCallback;
+        // 只关闭用户选择器弹窗，不关闭父级弹窗
+        if (window._usLayerIndex) {
+            layer.close(window._usLayerIndex);
+            window._usLayerIndex = null;
+        }
+        if (cb) {
+            cb({ id: userId, username: username, nickname: nickname });
+        }
+    }
+
+    // ============================================================
+    //  项目切换器
+    // ============================================================
+    function loadProjects(callback) {
+        ajax({
+            url: '/api/project/list', method: 'GET',
+            success: function(res) {
+                if (res.code === 200) {
+                    projectList = res.data || [];
+                    var sel = document.getElementById('projectSelect');
+                    sel.innerHTML = '';
+                    if (projectList.length === 0) {
+                        sel.innerHTML = '<option value="">无可用项目</option>';
+                        currentProjectId = null;
+                    } else {
+                        projectList.forEach(function(p) {
+                            var selected = (currentProjectId === p.id) ? ' selected' : '';
+                            sel.innerHTML += '<option value="' + p.id + '"' + selected + '>' + escHtml(p.projectName) + '</option>';
+                        });
+                        if (!currentProjectId && projectList.length > 0) {
+                            currentProjectId = projectList[0].id;
+                            sel.value = currentProjectId;
+                        }
+                    }
+                }
+                if (callback) callback();
+            },
+            error: function() {
+                if (callback) callback();
+            }
+        });
+    }
+
+    function onProjectChange() {
+        var sel = document.getElementById('projectSelect');
+        currentProjectId = sel.value ? parseInt(sel.value) : null;
+        // 先更新标题中的项目名称，再重新加载当前页面数据
+        if (currentTab) {
+            switchTab(currentTab);
+        } else if (currentProjectId) {
+            loadCurrentTab();
+        }
+    }
+
+    function refreshProjects() {
+        loadProjects();
+        layer.msg('<i class="fas fa-sync-alt"></i> 项目列表已刷新', {icon: 1, time: 1500});
+    }
+
+    function loadCurrentTab() {
+        var loaders = { interface: loadInterface, testcase: loadTestcase, dashboard: loadDashboard, project: loadProject, user: loadUser, role: loadRole, permission: loadPermission };
+        var fn = loaders[currentTab];
+        if (fn) fn(1);
+    }
+
+    function getProjectApi(path) {
+        if (!currentProjectId) {
+            layer.msg('<i class="fas fa-exclamation-triangle"></i> 请先选择项目', {icon: 2, time: 2000});
+            return null;
+        }
+        return '/api/project/' + currentProjectId + path;
+    }
+
+    // ============================================================
+    //  项目管理
+    // ============================================================
+    function loadProject(pageNum) {
+        if (!pageNum) pageNum = 1;
+        var keyword = document.getElementById('projectKeyword') ? document.getElementById('projectKeyword').value : '';
+        ajax({
+            url: '/api/project/page?pageNum=' + pageNum + '&pageSize=10&keyword=' + encodeURIComponent(keyword),
+            method: 'GET',
+            success: function(res) {
+                if (res.code === 200) {
+                    var data = res.data;
+                    var html = '';
+                    if (data.records && data.records.length > 0) {
+                        data.records.forEach(function(p) {
+                            html += '<tr>';
+                            html += '<td>' + p.id + '</td>';
+                            html += '<td><strong>' + escHtml(p.projectName) + '</strong></td>';
+                            html += '<td><code>' + escHtml(p.projectCode) + '</code></td>';
+                            html += '<td>' + escHtml(p.description || '-') + '</td>';
+                            html += '<td>' + escHtml(p.ownerName || '-') + '</td>';
+                            html += '<td>' + (p.memberCount || 0) + '</td>';
+                            html += '<td>' + (p.interfaceCount || 0) + '</td>';
+                            html += '<td>' + (p.status === 1 ? '<span class="tag tag-success">启用</span>' : '<span class="tag tag-danger">禁用</span>') + '</td>';
+                            html += '<td>';
+                            html += '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="showProjectForm(' + p.id + ')" style="border-radius:4px;"><i class="fas fa-edit"></i></button> ';
+                            html += '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="showProjectMembers(' + p.id + ')" style="border-radius:4px;"><i class="fas fa-users"></i></button> ';
+                            html += '<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteProject(' + p.id + ',\'' + escHtml(p.projectName).replace(/'/g, "\\'") + '\')" style="border-radius:4px;"><i class="fas fa-trash"></i></button>';
+                            html += '</td>';
+                            html += '</tr>';
+                        });
+                    } else {
+                        html = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:30px;">暂无项目数据</td></tr>';
+                    }
+                    document.getElementById('projectTbody').innerHTML = html;
+                    renderPager('projectPager', data, loadProject);
+                }
+            }
+        });
+    }
+
+    function showProjectForm(id) {
+        var isEdit = !!id;
+        var title = isEdit ? '编辑项目' : '新建项目';
+        var p = null;
+        if (isEdit) {
+            projectList.forEach(function(item) { if (item.id === id) p = item; });
+        }
+        var ownerName = '';
+        if (p && p.ownerId) {
+            // 尝试从项目数据中获取负责人名称
+            ownerName = p.ownerName || ('#' + p.ownerId);
+        }
+        var html =
+            '<div style="padding:24px 28px;">' +
+            '<div class="layui-form">' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;">项目名称</label><div class="layui-input-block" style="margin-left:120px;"><input id="pj_name" class="layui-input" value="' + (p ? escHtml(p.projectName) : '') + '"></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;">项目编码</label><div class="layui-input-block" style="margin-left:120px;"><input id="pj_code" class="layui-input" value="' + (p ? escHtml(p.projectCode) : '') + '" ' + (isEdit ? 'readonly' : '') + '></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;">描述</label><div class="layui-input-block" style="margin-left:120px;"><textarea id="pj_desc" class="layui-textarea" style="min-height:60px;">' + (p ? escHtml(p.description || '') : '') + '</textarea></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;">负责人</label><div class="layui-input-block" style="margin-left:120px;"><div style="display:flex;gap:8px;">' +
+            '<input id="pj_owner" type="hidden" value="' + (p && p.ownerId ? p.ownerId : '') + '">' +
+            '<span id="pj_owner_display" style="flex:1;padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);' + (ownerName ? '' : 'opacity:0.6;') + '">' + (ownerName || '点击右侧按钮选择') + '</span>' +
+            '<button type="button" class="layui-btn layui-btn-sm" onclick="selectProjectOwner()" style="border-radius:6px;"><i class="fas fa-user"></i> 选择</button>' +
+            (ownerName ? '<button type="button" class="layui-btn layui-btn-sm layui-btn-warm" onclick="clearProjectOwner()" style="border-radius:6px;"><i class="fas fa-times"></i></button>' : '') +
+            '</div></div></div>' +
+            '<div class="layui-form-item"><label class="layui-form-label" style="width:100px;">状态</label><div class="layui-input-block" style="margin-left:120px;"><select id="pj_status"><option value="1"' + (!p || p.status === 1 ? ' selected' : '') + '>启用</option><option value="0"' + (p && p.status === 0 ? ' selected' : '') + '>禁用</option></select></div></div>' +
+            '</div></div>';
+
+        openLayer('<i class="fas fa-folder-tree"></i> ' + title, html, ['500px', '460px'], function(index) {
+            var data = {
+                projectName: document.getElementById('pj_name').value,
+                projectCode: document.getElementById('pj_code').value,
+                description: document.getElementById('pj_desc').value,
+                ownerId: document.getElementById('pj_owner').value ? parseInt(document.getElementById('pj_owner').value) : null,
+                status: parseInt(document.getElementById('pj_status').value)
+            };
+            if (!data.projectName || !data.projectCode) {
+                layer.msg('项目名称和编码不能为空', {icon: 2}); return;
+            }
+            if (isEdit) data.id = id;
+            ajax({
+                url: '/api/project' + (isEdit ? '' : ''),
+                method: isEdit ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(res) {
+                    if (res.code === 200) {
+                        layer.close(index);
+                        layer.msg('<i class="fas fa-check-circle"></i> ' + (isEdit ? '修改成功' : '创建成功'), {icon: 1, time: 1500});
+                        loadProject(1);
+                        loadProjects();
+                    }
+                }
+            });
+        });
+    }
+
+    function selectProjectOwner() {
+        showUserSelector(function(user) {
+            document.getElementById('pj_owner').value = user.id;
+            document.getElementById('pj_owner_display').textContent = user.nickname || user.username;
+            document.getElementById('pj_owner_display').style.opacity = '1';
+        });
+    }
+
+    function clearProjectOwner() {
+        document.getElementById('pj_owner').value = '';
+        document.getElementById('pj_owner_display').textContent = '点击右侧按钮选择';
+        document.getElementById('pj_owner_display').style.opacity = '0.6';
+    }
+
+    function deleteProject(id, name) {
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;"></i> 确定删除项目 <strong>' + name + '</strong> 吗？<br>此操作将同时删除该项目下的所有接口和用例！', { icon: 3, title: '警告' }, function(index) {
+            ajax({
+                url: '/api/project/' + id, method: 'DELETE',
+                success: function(res) {
+                    if (res.code === 200) {
+                        layer.msg('<i class="fas fa-check-circle"></i> 删除成功', {icon: 1, time: 1500});
+                        loadProject(1);
+                        loadProjects();
+                        if (currentProjectId === id) {
+                            currentProjectId = null;
+                            loadProjects();
+                        }
+                    }
+                }
+            });
+            layer.close(index);
+        });
+    }
+
+    function showProjectMembers(projectId) {
+        ajax({
+            url: '/api/project/' + projectId + '/members', method: 'GET',
+            success: function(res) {
+                if (res.code === 200) {
+                    var members = res.data || [];
+                    var html = '<div style="padding:20px 24px;">';
+                    html += '<table class="layui-table" lay-skin="line"><thead><tr><th>用户名</th><th>昵称</th><th>角色</th><th>操作</th></tr></thead><tbody>';
+                    if (members.length === 0) {
+                        html += '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">暂无成员</td></tr>';
+                    } else {
+                        members.forEach(function(m) {
+                            html += '<tr>';
+                            html += '<td>' + escHtml(m.username || '-') + '</td>';
+                            html += '<td>' + escHtml(m.nickname || '-') + '</td>';
+                            html += '<td><span class="tag ' + (m.role === 'OWNER' ? 'tag-primary' : (m.role === 'ADMIN' ? 'tag-warning' : 'tag-success')) + '">' + escHtml(m.role) + '</span></td>';
+                            html += '<td>';
+                            if (m.role !== 'OWNER') {
+                                html += '<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="removeProjectMember(' + projectId + ',' + m.userId + ')" style="border-radius:4px;"><i class="fas fa-user-minus"></i></button>';
+                            }
+                            html += '</td>';
+                            html += '</tr>';
+                        });
+                    }
+                    html += '</tbody></table>';
+                    html += '<div style="margin-top:10px;display:flex;gap:8px;">';
+                    html += '<input id="pm_userId" type="hidden" value="">';
+                    html += '<span id="pm_user_display" style="flex:1;padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);">点击右侧按钮选择用户</span>';
+                    html += '<button type="button" class="layui-btn layui-btn-sm" onclick="selectMemberUser()" style="border-radius:6px;"><i class="fas fa-user"></i> 选择</button>';
+                    html += '<select id="pm_role" class="layui-input" style="width:100px;"><option value="MEMBER">MEMBER</option><option value="ADMIN">ADMIN</option></select>';
+                    html += '<button class="layui-btn layui-btn-sm" onclick="addProjectMember(' + projectId + ')" style="border-radius:6px;"><i class="fas fa-user-plus"></i> 添加</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    window._pmProjectId = projectId;
+                    layer.open({
+                        type: 1, title: '<i class="fas fa-users"></i> 项目成员管理', area: ['600px', '450px'],
+                        content: html, shadeClose: true
+                    });
+                }
+            }
+        });
+    }
+
+    function selectMemberUser() {
+        showUserSelector(function(user) {
+            document.getElementById('pm_userId').value = user.id;
+            document.getElementById('pm_user_display').textContent = (user.nickname || user.username) + ' (#' + user.id + ')';
+            document.getElementById('pm_user_display').style.color = 'var(--text)';
+        });
+    }
+
+    function addProjectMember(projectId) {
+        var userId = document.getElementById('pm_userId').value;
+        var role = document.getElementById('pm_role').value;
+        if (!userId) { layer.msg('请先选择用户', {icon: 2}); return; }
+        ajax({
+            url: '/api/project/' + projectId + '/members', method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify([{ userId: parseInt(userId), role: role }]),
+            success: function(res) {
+                if (res.code === 200) {
+                    layer.closeAll();
+                    layer.msg('<i class="fas fa-check-circle"></i> 成员添加成功', {icon: 1, time: 1500});
+                    showProjectMembers(projectId);
+                }
+            }
+        });
+    }
+
+    function removeProjectMember(projectId, userId) {
+        layer.confirm('确定移除该成员吗？', { icon: 3, title: '提示' }, function(index) {
+            ajax({
+                url: '/api/project/' + projectId + '/members/' + userId, method: 'DELETE',
+                success: function(res) {
+                    if (res.code === 200) {
+                        layer.closeAll();
+                        layer.msg('<i class="fas fa-check-circle"></i> 成员已移除', {icon: 1, time: 1500});
+                        showProjectMembers(projectId);
+                    }
                 }
             });
             layer.close(index);
@@ -1985,12 +2563,24 @@
                     var u = res.data;
                     document.getElementById('userName').textContent = u.nickname || u.username;
                     document.getElementById('userAvatar').textContent = (u.nickname || u.username).charAt(0).toUpperCase();
+
+                    // 保存用户权限列表，用于动态显示侧边栏
+                    window.userPermissions = u.permissions || [];
+                    applySidebarPermissions(window.userPermissions);
                 }
+
+                // 项目列表加载完成后，再加载默认页面（确保 currentProjectId 已设置）
+                loadProjects(function() {
+                    switchTab('dashboard');
+                });
+            },
+            error: function() {
+                // 获取用户信息失败，仍然尝试加载项目
+                loadProjects(function() {
+                    switchTab('dashboard');
+                });
             }
         });
-
-        // 默认加载第一个页面
-        switchTab('dashboard');
     });
 </script>
 

@@ -11,7 +11,7 @@
             <h3><i class="fas fa-vial"></i> 用例列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="tcKeyword" placeholder="按用例标题搜索..." style="width:180px;">
+                    <input class="layui-input" id="tcKeyword" placeholder="按用例标题搜索..." style="width:180px;" onkeydown="if(event.key==='Enter')loadTestcase(1)">
                     <select id="tcEnv" style="height:38px;border:1px solid var(--border-color);border-radius:6px;padding:0 8px;font-size:13px;background:var(--input-bg);color:var(--text-primary);outline:none;cursor:pointer;">
                         <option value="">全部环境</option>
                         <option value="dev">DEV</option>
@@ -71,7 +71,7 @@
     function loadTestcase(page) {
         var keyword = document.getElementById('tcKeyword') ? document.getElementById('tcKeyword').value : '';
         var env = document.getElementById('tcEnv') ? document.getElementById('tcEnv').value : '';
-        var url = '/api/testcase/page?pageNum=' + page + '&pageSize=10';
+        var url = getProjectApi('/testcase/page?pageNum=' + page + '&pageSize=10');
         if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
         if (env) url += '&env=' + encodeURIComponent(env);
         ajax({
@@ -136,7 +136,7 @@
         if (!container || container.innerHTML) return;
         container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
         ajax({
-            url: '/api/testcase/' + id,
+            url: getProjectApi('/testcase/' + id),
             success: function(res) {
                 if (res.code !== 200) { container.innerHTML = '<div style="color:#ef5350;">加载失败</div>'; return; }
                 var tc = res.data;
@@ -200,7 +200,7 @@
         layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除选中的 ' + tcSelectedIds.length + ' 个用例？', { icon: 3, title: '批量删除' }, function(index) {
             var done = 0, total = tcSelectedIds.length;
             tcSelectedIds.forEach(function(id) {
-                ajax({ url: '/api/testcase/' + id, method: 'DELETE', success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已删除 ' + total + ' 个用例', {icon:1}); loadTestcase(1); } } });
+                ajax({ url: getProjectApi('/testcase/' + id), method: 'DELETE', success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已删除 ' + total + ' 个用例', {icon:1}); loadTestcase(1); } } });
             });
         });
     }
@@ -211,10 +211,10 @@
         layer.confirm('确定' + text + '选中的 ' + tcSelectedIds.length + ' 个用例？', { icon: 3 }, function(index) {
             var done = 0, total = tcSelectedIds.length;
             tcSelectedIds.forEach(function(id) {
-                ajax({ url: '/api/testcase/' + id, success: function(res) {
+                ajax({ url: getProjectApi('/testcase/' + id), success: function(res) {
                     if (res.code === 200) {
                         var obj = res.data; obj.enabled = enabled;
-                        ajax({ url: '/api/testcase', method: 'PUT', contentType: 'application/json', data: JSON.stringify(obj), success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已' + text + ' ' + total + ' 个用例', {icon:1}); loadTestcase(1); } } });
+                        ajax({ url: getProjectApi('/testcase'), method: 'PUT', contentType: 'application/json', data: JSON.stringify(obj), success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已' + text + ' ' + total + ' 个用例', {icon:1}); loadTestcase(1); } } });
                     } else { done++; if (done >= total) { layer.close(index); loadTestcase(1); } }
                 }});
             });
@@ -240,10 +240,10 @@
         if (tr) tr.classList.remove('drag-over');
         if (tcDragSrcId === targetId) return;
         ajax({
-            url: '/api/testcase/' + tcDragSrcId, success: function(srcRes) {
+            url: getProjectApi('/testcase/' + tcDragSrcId), success: function(srcRes) {
                 if (srcRes.code !== 200) return;
                 ajax({
-                    url: '/api/testcase/' + targetId, success: function(tgtRes) {
+                    url: getProjectApi('/testcase/' + targetId), success: function(tgtRes) {
                         if (tgtRes.code !== 200) return;
                         var srcObj = srcRes.data, tgtObj = tgtRes.data;
                         var tmpSort = srcObj.sortOrder;
@@ -251,8 +251,8 @@
                         tgtObj.sortOrder = tmpSort;
                         var done = 0;
                         function checkDone() { done++; if (done >= 2) loadTestcase(1); }
-                        ajax({ url: '/api/testcase', method: 'PUT', contentType: 'application/json', data: JSON.stringify(srcObj), success: checkDone });
-                        ajax({ url: '/api/testcase', method: 'PUT', contentType: 'application/json', data: JSON.stringify(tgtObj), success: checkDone });
+                        ajax({ url: getProjectApi('/testcase'), method: 'PUT', contentType: 'application/json', data: JSON.stringify(srcObj), success: checkDone });
+                        ajax({ url: getProjectApi('/testcase'), method: 'PUT', contentType: 'application/json', data: JSON.stringify(tgtObj), success: checkDone });
                     }
                 });
             }
@@ -312,7 +312,7 @@
             }
             if (isEdit) obj.id = d.id;
             ajax({
-                url: '/api/testcase', method: isEdit ? 'PUT' : 'POST',
+                url: getProjectApi('/testcase'), method: isEdit ? 'PUT' : 'POST',
                 contentType: 'application/json', data: JSON.stringify(obj),
                 success: function(res) {
                     if (res.code === 200) { layer.close(index); layer.msg('保存成功！', {icon:1}); loadTestcase(1); }
@@ -340,7 +340,7 @@
     function runOnlineTest(testcaseId, caseTitle, env) {
         var loadingIdx = layer.load(1, {shade: [0.2, '#000']});
         ajax({
-            url: '/api/online-test/execute',
+            url: getProjectApi('/online-test/execute'),
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ testcaseId: testcaseId, env: env }),
@@ -526,7 +526,7 @@
 
     function loadTcAllData() {
         ajax({
-            url: '/api/testcase/page?pageNum=1&pageSize=9999',
+            url: getProjectApi('/testcase/page?pageNum=1&pageSize=9999'),
             success: function(res) {
                 if (res.code !== 200) return;
                 tcAllData = res.data.records || [];

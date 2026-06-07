@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/interface")
+@RequestMapping("/api/project/{projectId}/interface")
 @RequiredArgsConstructor
 public class ApiInterfaceController {
 
@@ -26,13 +26,15 @@ public class ApiInterfaceController {
 
     @GetMapping("/page")
     @SaCheckPermission("api:manage")
-    public Result<Page<ApiInterface>> page(@RequestParam(defaultValue = "1") int pageNum,
+    public Result<Page<ApiInterface>> page(@PathVariable Long projectId,
+                                           @RequestParam(defaultValue = "1") int pageNum,
                                            @RequestParam(defaultValue = "10") int pageSize,
                                            @RequestParam(required = false) String keyword,
                                            @RequestParam(required = false) String method,
                                            @RequestParam(required = false) String env) {
         Page<ApiInterface> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<ApiInterface> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiInterface::getProjectId, projectId);
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(ApiInterface::getApiName, keyword)
                     .or().like(ApiInterface::getApiInfo, keyword));
@@ -81,7 +83,7 @@ public class ApiInterfaceController {
 
     @GetMapping("/{id}")
     @SaCheckPermission("api:manage")
-    public Result<ApiInterface> getById(@PathVariable Long id) {
+    public Result<ApiInterface> getById(@PathVariable Long projectId, @PathVariable Long id) {
         return Result.ok(apiInterfaceService.getById(id));
     }
 
@@ -90,13 +92,14 @@ public class ApiInterfaceController {
      */
     @GetMapping("/{id}/detail")
     @SaCheckPermission("api:manage")
-    public Result<Map<String, Object>> detail(@PathVariable Long id) {
+    public Result<Map<String, Object>> detail(@PathVariable Long projectId, @PathVariable Long id) {
         ApiInterface apiInterface = apiInterfaceService.getById(id);
         if (apiInterface == null) {
             return Result.fail("接口不存在");
         }
         List<ApiTestcase> testcases = apiTestcaseService.list(
                 new LambdaQueryWrapper<ApiTestcase>()
+                        .eq(ApiTestcase::getProjectId, projectId)
                         .eq(ApiTestcase::getInterfaceId, id)
                         .orderByAsc(ApiTestcase::getSortOrder)
                         .orderByDesc(ApiTestcase::getId));
@@ -109,14 +112,16 @@ public class ApiInterfaceController {
 
     @PostMapping
     @SaCheckPermission("api:manage")
-    public Result<Void> save(@RequestBody ApiInterface apiInterface) {
+    public Result<Void> save(@PathVariable Long projectId, @RequestBody ApiInterface apiInterface) {
+        apiInterface.setProjectId(projectId);
         apiInterfaceService.save(apiInterface);
         return Result.ok();
     }
 
     @PutMapping
     @SaCheckPermission("api:manage")
-    public Result<Void> update(@RequestBody ApiInterface apiInterface) {
+    public Result<Void> update(@PathVariable Long projectId, @RequestBody ApiInterface apiInterface) {
+        apiInterface.setProjectId(projectId);
         apiInterfaceService.updateById(apiInterface);
         return Result.ok();
     }
@@ -124,9 +129,10 @@ public class ApiInterfaceController {
     @DeleteMapping("/{id}")
     @SaCheckPermission("api:manage")
     @Transactional(rollbackFor = Exception.class)
-    public Result<Void> delete(@PathVariable Long id) {
-        // 级联删除关联的测试用例
-        apiTestcaseService.remove(new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getInterfaceId, id));
+    public Result<Void> delete(@PathVariable Long projectId, @PathVariable Long id) {
+        apiTestcaseService.remove(new LambdaQueryWrapper<ApiTestcase>()
+                .eq(ApiTestcase::getProjectId, projectId)
+                .eq(ApiTestcase::getInterfaceId, id));
         apiInterfaceService.removeById(id);
         return Result.ok();
     }

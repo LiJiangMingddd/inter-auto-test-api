@@ -13,7 +13,7 @@ import javax.validation.Valid;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/online-test")
+@RequestMapping("/api/project/{projectId}/online-test")
 @RequiredArgsConstructor
 public class OnlineTestController {
 
@@ -21,8 +21,8 @@ public class OnlineTestController {
 
     @PostMapping("/execute")
     @SaCheckPermission("case:manage")
-    public Result<OnlineTestResponse> execute(@Valid @RequestBody OnlineTestRequest request) {
-        log.info("[OnlineTest] 收到在线测试请求: testcaseId={}, env={}", request.getTestcaseId(), request.getEnv());
+    public Result<OnlineTestResponse> execute(@PathVariable Long projectId, @Valid @RequestBody OnlineTestRequest request) {
+        log.info("[OnlineTest] 收到在线测试请求: projectId={}, testcaseId={}, env={}", projectId, request.getTestcaseId(), request.getEnv());
         OnlineTestResponse response = onlineTestService.executeTest(request);
         return Result.ok(response);
     }

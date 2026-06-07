@@ -15,7 +15,7 @@ import javax.validation.Valid;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/open")
+@RequestMapping("/api/project/{projectId}/open")
 @Tag(name = "Open API（对外接口）", description = "需要先调用 /api/auth/getToken 获取 token，再在 Authorization 头携带 token 调用本接口。")
 @RequiredArgsConstructor
 public class OpenApiController {
@@ -27,15 +27,16 @@ public class OpenApiController {
     @Operation(summary = "批量导入接口和测试用例",
             description = "步骤1: POST /api/auth/getToken 传入 {appId, appKey} 获取 token\n步骤2: 在 Authorization 头携带 token 调用本接口批量导入")
     public Result<BatchImportResponse> batchImport(
+            @PathVariable Long projectId,
             @Valid @RequestBody BatchImportRequest request) {
-        log.info("▶▶▶ [OpenApi] 收到批量导入请求：interfaces={} 条", request.getInterfaces().size());
-        BatchImportResponse response = openApiService.batchImport(request);
+        log.info("▶▶▶ [OpenApi] 收到批量导入请求：projectId={}, interfaces={} 条", projectId, request.getInterfaces().size());
+        BatchImportResponse response = openApiService.batchImport(projectId, request);
         return Result.ok(response);
     }
 
     @GetMapping("/health")
     @Operation(summary = "健康检查", description = "供 Agent 检查服务是否可用")
-    public Result<String> health() {
+    public Result<String> health(@PathVariable Long projectId) {
         return Result.ok("OK - Inter Auto Test API is running");
     }
 }

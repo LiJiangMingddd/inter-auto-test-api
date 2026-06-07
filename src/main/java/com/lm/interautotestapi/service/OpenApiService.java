@@ -26,8 +26,8 @@ public class OpenApiService {
      * 批量导入接口和用例（事务性，单个失败不影响其他）
      */
     @Transactional(rollbackFor = Exception.class)
-    public BatchImportResponse batchImport(BatchImportRequest request) {
-        log.info("===== [OpenApi] 开始批量导入：interfaces={} 条 =====", request.getInterfaces().size());
+    public BatchImportResponse batchImport(Long projectId, BatchImportRequest request) {
+        log.info("===== [OpenApi] 开始批量导入：projectId={}, interfaces={} 条 =====", projectId, request.getInterfaces().size());
 
         BatchImportResponse response = new BatchImportResponse();
         List<BatchImportResponse.ImportError> errors = new ArrayList<>();
@@ -37,6 +37,7 @@ public class OpenApiService {
             BatchInterfaceItem item = request.getInterfaces().get(i);
             try {
                 ApiInterface apiIf = new ApiInterface();
+                apiIf.setProjectId(projectId);
                 apiIf.setApiName(item.getApiName());
                 apiIf.setApiInfo(item.getApiInfo());
                 apiIf.setMethod(item.getMethod());
@@ -52,6 +53,7 @@ public class OpenApiService {
                     List<ApiTestcase> tcList = new ArrayList<>();
                     for (BatchTestcaseItem tcItem : item.getTestcases()) {
                         ApiTestcase tc = new ApiTestcase();
+                        tc.setProjectId(projectId);
                         tc.setInterfaceId(apiIf.getId());
                         tc.setCaseTitle(tcItem.getCaseTitle());
                         tc.setCaseData(tcItem.getCaseData());
@@ -84,8 +86,8 @@ public class OpenApiService {
         response.setErrors(errors);
         response.setSuccess(errors.isEmpty());
 
-        log.info("===== [OpenApi] 批量导入完成：接口成功={}, 失败={}, 用例成功={} =====",
-                ifaceSuccess, response.getInterfaceFailed(), response.getTestcaseSuccess());
+        log.info("===== [OpenApi] 批量导入完成：projectId={}, 接口成功={}, 失败={}, 用例成功={} =====",
+                projectId, ifaceSuccess, response.getInterfaceFailed(), response.getTestcaseSuccess());
         return response;
     }
 }

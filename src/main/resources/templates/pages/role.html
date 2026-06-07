@@ -10,7 +10,7 @@
             <h3><i class="fas fa-user-tag"></i> 角色列表</h3>
             <div class="toolbar">
                 <div class="search-bar">
-                    <input class="layui-input" id="roleKeyword" placeholder="搜索角色名称/编码..." style="width:200px;">
+                    <input class="layui-input" id="roleKeyword" placeholder="搜索角色名称/编码..." style="width:200px;" onkeydown="if(event.key==='Enter')loadRole(1)">
                     <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="loadRole(1)">
                         <i class="fas fa-search"></i> 搜索
                     </button>
@@ -23,7 +23,6 @@
         <table class="layui-table" lay-skin="line" style="table-layout:auto;">
             <thead>
             <tr>
-                <th style="width:55px;">ID</th>
                 <th style="min-width:80px;">角色名称</th>
                 <th style="min-width:90px;">角色编码</th>
                 <th style="min-width:80px;">描述</th>
@@ -50,7 +49,6 @@
                 var data = res.data, html = '';
                 (data.records || []).forEach(function(item, i) {
                     html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
-                        '<td>' + item.id + '</td>' +
                         '<td><span class="cell-tip"><strong>' + escHtml(item.roleName) + '</strong><span class="tip-content">' + escHtml(item.roleName) + '</span></span></td>' +
                         '<td><code style="background:var(--code-bg);padding:2px 8px;border-radius:4px;color:var(--code-text);">' + escHtml(item.roleCode) + '</code></td>' +
                         '<td><span class="cell-tip"><small style="color:#999;">' + escHtml(item.roleDesc||'-') + '</small><span class="tip-content">' + escHtml(item.roleDesc||'-') + '</span></span></td>' +
@@ -61,7 +59,7 @@
                         '</td></tr>';
                 });
                 if (!html) {
-                    html = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tag"></i><p>暂无角色数据</p></div></td></tr>';
+                    html = '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-user-tag"></i><p>暂无角色数据</p></div></td></tr>';
                 }
                 document.getElementById('roleTbody').innerHTML = html;
                 renderPager('rolePage', data, loadRole);
@@ -131,11 +129,13 @@
                     success: function(res2) {
                         var rolePermIds = (res2.code === 200 && res2.data) ? res2.data : [];
                         perms.forEach(function(p) {
-                            var checked = rolePermIds.indexOf(p.id) > -1 ? 'checked' : '';
-                            permCheckboxes += '<div style="padding:6px 0;border-bottom:1px solid var(--border-color);"><input type="checkbox" name="permChk" value="' + p.id + '" ' + checked + ' lay-skin="primary" title="' + escHtml(p.permName) + ' <small>(' + escHtml(p.permCode) + ')</small>"></div>';
+                            var checked = rolePermIds.indexOf(p.id) > -1 ? ' checked' : '';
+                            permCheckboxes += '<label style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(102,126,234,.05)\'" onmouseout="this.style.background=\'\'">' +
+                                '<input type="checkbox" name="permChk" value="' + p.id + '"' + checked + ' style="width:16px;height:16px;accent-color:#667eea;cursor:pointer;">' +
+                                '<span style="flex:1;"><strong style="color:var(--text-primary);">' + escHtml(p.permName) + '</strong> <code style="background:var(--code-bg);padding:1px 6px;border-radius:3px;color:var(--code-text);font-size:11px;">' + escHtml(p.permCode) + '</code></span></label>';
                         });
                         if (!perms.length) {
-                            permCheckboxes = '<div style="text-align:center;padding:30px 0;color:#bbb;"><i class="fas fa-info-circle"></i> 暂无权限，请先创建权限</div>';
+                            permCheckboxes = '<div style="text-align:center;padding:30px 0;color:var(--text-muted);"><i class="fas fa-info-circle"></i> 暂无权限，请先创建权限</div>';
                         }
                     }
                 });
@@ -143,10 +143,10 @@
         });
 
         var html = '<div style="padding:20px 28px;">' +
-            '<p style="margin-bottom:16px;color:#666;"><i class="fas fa-shield-halved" style="color:#667eea;"></i> 为角色 <strong>' + escHtml(roleName) + '</strong> 分配权限</p>' +
+            '<p style="margin-bottom:16px;color:var(--text-secondary);"><i class="fas fa-shield-halved" style="color:#667eea;"></i> 为角色 <strong style="color:var(--text-primary);">' + escHtml(roleName) + '</strong> 分配权限</p>' +
             permCheckboxes + '</div>';
 
-        openLayer('分配权限', html, ['420px', '360px'], function(index) {
+        openLayer('分配权限', html, ['440px', '400px'], function(index) {
             var checks = document.querySelectorAll('input[name="permChk"]:checked');
             var permIds = [];
             checks.forEach(function(c) { permIds.push(parseInt(c.value)); });

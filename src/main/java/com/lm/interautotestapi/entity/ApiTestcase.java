@@ -12,6 +12,8 @@ public class ApiTestcase {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    private Long projectId;
+
     private Long interfaceId;
 
     private String caseTitle;

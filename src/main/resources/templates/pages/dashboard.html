@@ -131,6 +131,46 @@
 .heatmap-cell.hm-warn { background:rgba(255,167,38,.12); color:#ffa726; border-color:rgba(255,167,38,.2); }
 .heatmap-cell.hm-bad { background:rgba(245,87,108,.12); color:#f5576c; border-color:rgba(245,87,108,.2); }
 .heatmap-cell.hm-empty { background:var(--bg-card); color:var(--text-muted); border-color:var(--border-color); }
+
+/* ---- 项目标杆 ---- */
+.dash-project-badge {
+    display:flex; align-items:center; gap:16px;
+    background:var(--bg-card); border:1px solid var(--border-color);
+    border-radius:16px; padding:18px 22px; margin-bottom:20px;
+    transition:all .4s cubic-bezier(.4,0,.2,1);
+    cursor:default;
+}
+.dash-project-badge:hover {
+    border-color:rgba(102,126,234,.3);
+    box-shadow:0 4px 20px rgba(102,126,234,.08);
+    transform:translateY(-2px);
+}
+.dash-project-badge .dpb-icon {
+    width:52px; height:52px; border-radius:14px;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; color:#fff; flex-shrink:0;
+    box-shadow:0 6px 20px rgba(102,126,234,.25);
+}
+.dash-project-badge .dpb-body { flex:1; min-width:0; }
+.dash-project-badge .dpb-name {
+    font-size:17px; font-weight:700; color:var(--text-primary);
+    display:flex; align-items:center; gap:8px;
+}
+.dash-project-badge .dpb-code {
+    font-size:11px; background:rgba(102,126,234,.1);
+    color:#667eea; padding:1px 8px; border-radius:4px;
+    font-family:monospace; font-weight:600;
+}
+.dash-project-badge .dpb-desc {
+    font-size:13px; color:var(--text-muted); margin-top:4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:400px;
+}
+.dash-project-badge .dpb-meta {
+    display:flex; align-items:center; gap:16px; margin-top:6px; font-size:12px; color:var(--text-muted);
+}
+.dash-project-badge .dpb-meta span { display:flex; align-items:center; gap:4px; }
+.dash-project-badge .dpb-meta i { font-size:11px; }
 </style>
 
 <!-- 统计卡片（炫酷渐变） -->
@@ -186,7 +226,7 @@
 </div>
 
 <!-- 接口健康度热力图 -->
-<div class="chart-box chart-anim card-glow" style="margin-top:18px;">
+<div id="heatmapBox" class="chart-box chart-anim card-glow" style="margin-top:18px;">
     <div class="glow-spot"></div>
     <div class="chart-title"><i class="fas fa-heart-pulse"></i> 接口健康度热力图</div>
     <div id="heatmapContainer" class="heatmap-grid"></div>
@@ -194,11 +234,61 @@
 
 <script>
 function loadDashboard() {
+    // 检查是否有可用项目
+    if (!window.currentProjectId) {
+        // 防止多次重复插入
+        if (document.querySelector('.dash-empty-state')) return;
+
+        // 隐藏所有统计内容
+        var dashGrid = document.querySelector('.dash-grid');
+        var chartGrid = document.querySelector('.chart-grid');
+        var heatmapBox = document.getElementById('heatmapBox');
+        if (dashGrid) dashGrid.style.display = 'none';
+        if (chartGrid) chartGrid.style.display = 'none';
+        if (heatmapBox) heatmapBox.style.display = 'none';
+        // 移除可能存在的项目标杆
+        var projBadge = document.querySelector('.dash-project-badge');
+        if (projBadge) projBadge.remove();
+
+        // 创建友好提示
+        var emptyHtml =
+            '<div class="dash-empty-state" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center;">' +
+            '<div style="width:100px;height:100px;border-radius:50%;background:rgba(102,126,234,.1);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">' +
+            '<i class="fas fa-folder-open" style="font-size:40px;color:#667eea;"></i></div>' +
+            '<h2 style="margin:0 0 8px;font-size:20px;font-weight:600;color:var(--text-primary);">暂无可用项目</h2>' +
+            '<p style="margin:0;font-size:14px;color:var(--text-muted);max-width:360px;line-height:1.6;">当前用户还没有被分配到任何项目，请联系管理员将你添加为项目成员。</p>' +
+            '</div>';
+        // 将 empty 插入到 dash-grid 前面（作为第一个子元素）
+        var appendParent = document.querySelector('.dash-grid') ? document.querySelector('.dash-grid').parentNode : document.querySelector('[th\\:fragment="dashboard-page"]');
+        if (appendParent) {
+            var div = document.createElement('div');
+            div.innerHTML = emptyHtml;
+            appendParent.insertBefore(div.firstElementChild, appendParent.firstChild);
+        }
+        var skeleton = document.getElementById('skeletonOverlay');
+        if (skeleton) skeleton.style.display = 'none';
+        return;
+    }
+
     ajax({
-        url: '/api/dashboard/stats',
+        url: getProjectApi('/dashboard/stats'),
         success: function(res) {
             if (res.code !== 200) return;
+            // 恢复所有面板显示（切换项目后从空状态恢复）
+            var dashGrid = document.querySelector('.dash-grid');
+            var chartGrid = document.querySelector('.chart-grid');
+            var heatmapBox = document.getElementById('heatmapBox');
+            if (dashGrid) dashGrid.style.display = '';
+            if (chartGrid) chartGrid.style.display = '';
+            if (heatmapBox) heatmapBox.style.display = '';
+            // 移除之前可能插入的空状态提示
+            var emptyEl = document.querySelector('.dash-empty-state');
+            if (emptyEl) emptyEl.remove();
+
             var d = res.data;
+
+            // ====== 更新项目标杆 ======
+            updateProjectBadge();
 
             animateNumber('statInterfaces', d.totalInterfaces || 0);
             animateNumber('statTestcases', d.totalTestcases || 0);
@@ -387,11 +477,50 @@ function loadDashboard() {
     });
 }
 
+// ====== 更新项目标杆（当前统计所属项目信息）======
+function updateProjectBadge() {
+    var container = document.querySelector('.dash-project-badge') ||
+        (function() {
+            var el = document.createElement('div');
+            el.className = 'dash-project-badge';
+            var dashGrid = document.querySelector('.dash-grid');
+            if (dashGrid && dashGrid.parentNode) {
+                dashGrid.parentNode.insertBefore(el, dashGrid);
+            }
+            return el;
+        })();
+    if (!container) return;
+    // 从 projectList 查找当前项目
+    var projectName = '', projectCode = '', description = '', ownerName = '';
+    if (window.currentProjectId && window.projectList) {
+        var p = window.projectList.find(function(item) { return item.id === window.currentProjectId; });
+        if (p) {
+            projectName = p.projectName || '';
+            projectCode = p.projectCode || '';
+            description = p.description || '';
+            ownerName = p.ownerName || '';
+        }
+    }
+    container.innerHTML =
+        '<div class="dpb-icon"><i class="fas fa-folder-tree"></i></div>' +
+        '<div class="dpb-body">' +
+            '<div class="dpb-name">' +
+                escHtml(projectName) +
+                (projectCode ? '<span class="dpb-code">' + escHtml(projectCode) + '</span>' : '') +
+            '</div>' +
+            (description ? '<div class="dpb-desc">' + escHtml(description) + '</div>' : '') +
+            '<div class="dpb-meta">' +
+                '<span><i class="fas fa-hashtag"></i> ID: ' + window.currentProjectId + '</span>' +
+                (ownerName ? '<span><i class="fas fa-user"></i> 负责人: ' + escHtml(ownerName) + '</span>' : '') +
+            '</div>' +
+        '</div>';
+}
+
 function loadTimeline() {
     var container = document.getElementById('timelineContainer');
     if (!container) return;
     ajax({
-        url: '/api/interface/page?pageNum=1&pageSize=10',
+        url: getProjectApi('/interface/page?pageNum=1&pageSize=10'),
         success: function(res) {
             if (res.code !== 200 || !res.data) return;
             var records = res.data.records || [];
@@ -424,7 +553,7 @@ function loadHeatmap(d) {
     var container = document.getElementById('heatmapContainer');
     if (!container) return;
     ajax({
-        url: '/api/interface/page?pageNum=1&pageSize=50',
+        url: getProjectApi('/interface/page?pageNum=1&pageSize=50'),
         success: function(res) {
             if (res.code !== 200 || !res.data) return;
             var records = res.data.records || [];

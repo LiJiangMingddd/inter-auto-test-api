@@ -1,5 +1,6 @@
 package com.lm.interautotestapi.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -13,7 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/user")
@@ -35,6 +38,32 @@ public class SysUserController {
         }
         wrapper.orderByDesc(SysUser::getId);
         return Result.ok(sysUserService.page(page, wrapper));
+    }
+
+    /**
+     * 公开的用户搜索接口（仅需登录），用于前端选择用户
+     * 只返回基本用户信息，不包含敏感字段
+     */
+    @GetMapping("/search")
+    @SaCheckLogin
+    public Result<List<Map<String, Object>>> search(@RequestParam(required = false) String keyword,
+                                                    @RequestParam(defaultValue = "50") int limit) {
+        LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like(SysUser::getUsername, keyword)
+                    .or().like(SysUser::getNickname, keyword);
+        }
+        wrapper.orderByDesc(SysUser::getId).last("LIMIT " + limit);
+        List<SysUser> users = sysUserService.list(wrapper);
+        List<Map<String, Object>> result = users.stream().map(u -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", u.getId());
+            m.put("username", u.getUsername());
+            m.put("nickname", u.getNickname());
+            m.put("email", u.getEmail());
+            return m;
+        }).collect(Collectors.toList());
+        return Result.ok(result);
     }
 
     @GetMapping("/{id}")
