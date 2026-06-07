@@ -5,19 +5,19 @@ import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.model.DifyRequest;
 import com.lm.interautotestapi.model.DifyResponse;
 import com.lm.interautotestapi.service.DifyService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import javax.validation.Valid;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/dify")
+@RequiredArgsConstructor
 public class DifyController {
 
-    @Resource
-    private DifyService difyService;
+    private final DifyService difyService;
 
     @PostMapping("/run")
     @SaCheckPermission("api:manage")

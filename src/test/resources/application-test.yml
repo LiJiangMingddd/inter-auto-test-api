@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      connection-timeout: 5000
+      maximum-pool-size: 5
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=10,expireAfterWrite=1m
+
+  jackson:
+    parser:
+      allow-comments: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+sa-token:
+  token-name: Authorization
+  timeout: 3600
+  token-style: uuid
+  is-concurrent: true
+  is-share: true
+  jwt-secret-key: test-secret-key-for-unit-test
+
+logging:
+  level:
+    com.lm.interautotestapi: INFO
+    com.lm.interautotestapi.mapper: WARN
+
+dify:
+  base-url: http://localhost:8080/v1
+  api-key: test-api-key

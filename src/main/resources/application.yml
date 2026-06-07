@@ -1,27 +1,34 @@
 server:
-  port: 8849
+  port: ${SERVER_PORT:8849}
 
 spring:
   datasource:
-    url: jdbc:mysql://192.168.150.101:3306/auto_test_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowMultiQueries=true
-    username: root
-    password: 123
+    url: ${DB_URL:jdbc:mysql://192.168.150.101:3306/auto_test_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowMultiQueries=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      connection-timeout: 10000
-      maximum-pool-size: 10
+      connection-timeout: ${DB_CONN_TIMEOUT:10000}
+      maximum-pool-size: ${DB_MAX_POOL:10}
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
 
   jackson:
-    # 允许 JSON 中包含 // 或 /* */ 注释（开发测试时方便）
     parser:
       allow-comments: true
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.lm.interautotestapi.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 sa-token:
   token-name: Authorization
@@ -29,12 +36,20 @@ sa-token:
   token-style: uuid
   is-concurrent: true
   is-share: true
-  jwt-secret-key: inter-auto-test-api-secret-key
+  jwt-secret-key: ${JWT_SECRET_KEY:inter-auto-test-api-secret-key}
 
 logging:
   level:
-    com.lm.interautotestapi: DEBUG
+    com.lm.interautotestapi: ${LOG_LEVEL:DEBUG}
+    com.lm.interautotestapi.mapper: ${SQL_LOG_LEVEL:WARN}
+  file:
+    name: ${LOG_PATH:logs}/inter-auto-test.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
+      total-size-cap: 1GB
 
 dify:
-  base-url: http://192.168.150.101:81/v1
-  api-key: app-NX1heM4tAXT5wPjwkJ9GdqL5
+  base-url: ${DIFY_BASE_URL:http://192.168.150.101:81/v1}
+  api-key: ${DIFY_API_KEY:}

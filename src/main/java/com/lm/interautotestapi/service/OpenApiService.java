@@ -6,23 +6,21 @@ import com.lm.interautotestapi.model.BatchImportRequest;
 import com.lm.interautotestapi.model.BatchImportResponse;
 import com.lm.interautotestapi.model.BatchInterfaceItem;
 import com.lm.interautotestapi.model.BatchTestcaseItem;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class OpenApiService {
 
-    @Resource
-    private ApiInterfaceService apiInterfaceService;
-
-    @Resource
-    private ApiTestcaseService apiTestcaseService;
+    private final ApiInterfaceService apiInterfaceService;
+    private final ApiTestcaseService apiTestcaseService;
 
     /**
      * 批量导入接口和用例（事务性，单个失败不影响其他）
@@ -51,7 +49,7 @@ public class OpenApiService {
                 log.info("[OpenApi] 接口创建成功：id={}, name={}", apiIf.getId(), apiIf.getApiName());
 
                 if (item.getTestcases() != null && !item.getTestcases().isEmpty()) {
-                    int tcSuccessCount = 0;
+                    List<ApiTestcase> tcList = new ArrayList<>();
                     for (BatchTestcaseItem tcItem : item.getTestcases()) {
                         ApiTestcase tc = new ApiTestcase();
                         tc.setInterfaceId(apiIf.getId());
@@ -62,11 +60,11 @@ public class OpenApiService {
                         tc.setEnv(tcItem.getEnv() != null ? tcItem.getEnv() : "dev");
                         tc.setEnabled(tcItem.getEnabled() != null ? tcItem.getEnabled() : 1);
                         tc.setSortOrder(tcItem.getSortOrder() != null ? tcItem.getSortOrder() : 0);
-                        apiTestcaseService.save(tc);
-                        tcSuccessCount++;
-                        log.info("[OpenApi]    └─ 用例创建成功：id={}, title={}", tc.getId(), tc.getCaseTitle());
+                        tcList.add(tc);
                     }
-                    response.setTestcaseSuccess(response.getTestcaseSuccess() + tcSuccessCount);
+                    apiTestcaseService.saveBatch(tcList);
+                    response.setTestcaseSuccess(response.getTestcaseSuccess() + tcList.size());
+                    log.info("[OpenApi]    └─ 用例批量创建成功：{} 条", tcList.size());
                 }
 
                 ifaceSuccess++;

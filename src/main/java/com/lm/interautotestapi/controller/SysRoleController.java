@@ -6,16 +6,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.SysRole;
 import com.lm.interautotestapi.service.SysRoleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import javax.annotation.Resource;
 
 @RestController
 @RequestMapping("/api/role")
+@RequiredArgsConstructor
 public class SysRoleController {
 
-    @Resource
-    private SysRoleService sysRoleService;
+    private final SysRoleService sysRoleService;
 
     @GetMapping("/page")
     @SaCheckPermission("role:manage")

@@ -7,20 +7,20 @@ import com.lm.interautotestapi.model.BatchImportResponse;
 import com.lm.interautotestapi.service.OpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import javax.validation.Valid;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/open")
 @Tag(name = "Open API（对外接口）", description = "需要先调用 /api/auth/getToken 获取 token，再在 Authorization 头携带 token 调用本接口。")
+@RequiredArgsConstructor
 public class OpenApiController {
 
-    @Resource
-    private OpenApiService openApiService;
+    private final OpenApiService openApiService;
 
     @PostMapping("/batch-import")
     @SaCheckLogin

@@ -16,10 +16,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class DifyServiceImpl implements DifyService {
 
-    @Value("${dify.base-url:http://192.168.150.101:81/v1}")
+    @Value("${dify.base-url}")
     private String baseUrl;
 
-    @Value("${dify.api-key:app-NX1heM4tAXT5wPjwkJ9GdqL5}")
+    @Value("${dify.api-key}")
     private String apiKey;
 
     private static final int TIMEOUT_MS = 300000;

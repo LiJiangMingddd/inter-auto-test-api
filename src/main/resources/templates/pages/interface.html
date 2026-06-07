@@ -5,7 +5,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="interface-page">
-    <div class="card">
+    <div class="card card-glow">
+        <div class="glow-spot"></div>
         <div class="card-header">
             <h3><i class="fas fa-list"></i> 接口列表</h3>
             <div class="toolbar">
@@ -34,9 +35,19 @@
                 </button>
             </div>
         </div>
+        <!-- 批量操作栏 -->
+        <div class="batch-bar" id="ifaceBatchBar">
+            <span>已选择 <span class="batch-count" id="ifaceBatchCount">0</span> 项</span>
+            <button class="layui-btn layui-btn-sm layui-btn-danger" onclick="batchDeleteInterface()"><i class="fas fa-trash"></i> 批量删除</button>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="batchToggleInterface(1)"><i class="fas fa-toggle-on"></i> 批量启用</button>
+            <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="batchToggleInterface(0)"><i class="fas fa-toggle-off"></i> 批量禁用</button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="clearIfaceBatch()"><i class="fas fa-times"></i> 取消</button>
+        </div>
         <table class="layui-table" lay-skin="line" style="table-layout:auto;">
             <thead>
             <tr>
+                <th style="width:40px;"><input type="checkbox" id="ifaceCheckAll" onchange="toggleAllIfaceCheck(this)"></th>
+                <th style="width:30px;"></th>
                 <th style="min-width:140px;">接口名称</th>
                 <th style="width:70px;">方法</th>
                 <th style="width:55px;">用例</th>
@@ -46,7 +57,15 @@
             </thead>
             <tbody id="interfaceTbody"></tbody>
         </table>
-        <div id="interfacePage" style="text-align:center;padding:10px 0;"></div>
+        <!-- 虚拟滚动容器（大数据模式） -->
+        <div id="ifaceVirtualContainer" style="display:none;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div id="interfacePage" style="text-align:center;flex:1;"></div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;white-space:nowrap;" title="数据量较大时启用虚拟滚动提升性能">
+                <input type="checkbox" id="ifaceVirtualToggle" onchange="toggleIfaceVirtualMode(this.checked)" style="vertical-align:middle;">
+                <i class="fas fa-bolt" style="color:#667eea;"></i> 虚拟滚动
+            </label>
+        </div>
     </div>
 
     <script>
@@ -54,6 +73,7 @@
     //  接口 CRUD
     // ============================================================
     /** 加载接口列表 */
+    var ifaceSelectedIds = [];
     function loadInterface(page) {
         var keyword = document.getElementById('interfaceKeyword') ? document.getElementById('interfaceKeyword').value : '';
         var method = document.getElementById('interfaceMethod') ? document.getElementById('interfaceMethod').value : '';
@@ -66,6 +86,8 @@
             success: function(res) {
                 if (res.code !== 200) { layer.msg(res.msg); return; }
                 var data = res.data, html = '';
+                ifaceSelectedIds = [];
+                updateIfaceBatchBar();
                 (data.records || []).forEach(function(item, i) {
                     var statusHtml = item.enabled === 1
                         ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
@@ -73,7 +95,10 @@
                     var tcCount = item.testcaseCount != null ? item.testcaseCount : '-';
                     var ifaceErrors = validateInterface(item);
                     var warnHtml = ifaceErrors.length > 0 ? ' <span class="format-warning">' + buildWarnDot(ifaceErrors) + '</span>' : '';
-                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
+                    var checked = ifaceSelectedIds.indexOf(item.id) > -1 ? ' checked' : '';
+                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's" data-id="' + item.id + '">' +
+                        '<td><input type="checkbox" class="iface-row-check" value="' + item.id + '"' + checked + ' onchange="onIfaceRowCheck()"></td>' +
+                        '<td><span class="row-expand-btn" onclick="toggleRowExpand(this,' + item.id + ')"><i class="fas fa-chevron-right"></i></span></td>' +
                         '<td><span class="cell-tip"><strong>' + escHtml(item.apiName) + '</strong>' + (item.apiInfo ? '<span class="tip-content">' + escHtml(item.apiName) + '：' + escHtml(item.apiInfo) + '</span>' : '') + '</span>' + warnHtml + '</td>' +
                         '<td><span class="tag tag-primary">' + escHtml(item.method) + '</span></td>' +
                         '<td style="text-align:center;"><span class="tag tag-primary">' + tcCount + '</span></td>' +
@@ -83,13 +108,116 @@
                         '<button class="action-btn edit" onclick="editInterface(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button>' +
                         '<button class="action-btn danger" onclick="deleteInterface(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
                         '</td></tr>';
+                    html += '<tr class="row-expand-detail" id="rowDetail_' + item.id + '" style="display:none;"><td colspan="7">' +
+                        '<div class="row-detail-content" id="rowDetailContent_' + item.id + '"></div></td></tr>';
                 });
                 if (!html) {
-                    html = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-database"></i><p>暂无数据</p></div></td></tr>';
+                    html = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-database"></i><p>暂无数据</p></div></td></tr>';
                 }
                 document.getElementById('interfaceTbody').innerHTML = html;
                 renderPager('interfacePage', data, loadInterface);
             }
+        });
+    }
+
+    function toggleRowExpand(btn, id) {
+        var detailRow = document.getElementById('rowDetail_' + id);
+        var icon = btn.querySelector('i');
+        if (detailRow.style.display === 'none') {
+            detailRow.style.display = '';
+            icon.className = 'fas fa-chevron-down';
+            btn.classList.add('expanded');
+            loadRowDetail(id);
+        } else {
+            detailRow.style.display = 'none';
+            icon.className = 'fas fa-chevron-right';
+            btn.classList.remove('expanded');
+        }
+    }
+
+    function loadRowDetail(id) {
+        var container = document.getElementById('rowDetailContent_' + id);
+        if (!container || container.innerHTML) return;
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
+        ajax({
+            url: '/api/interface/' + id + '/detail',
+            success: function(res) {
+                if (res.code !== 200) { container.innerHTML = '<div style="color:#ef5350;">加载失败</div>'; return; }
+                var iface = res.data.interface;
+                var html = '<div class="row-detail-grid">';
+                html += '<div class="rd-section"><div class="rd-label">请求方法</div><div class="rd-value"><span class="tag tag-primary">' + escHtml(iface.method) + '</span></div></div>';
+                html += '<div class="rd-section"><div class="rd-label">状态</div><div class="rd-value">' + (iface.enabled === 1 ? '<span class="tag tag-success">启用</span>' : '<span class="tag tag-danger">禁用</span>') + '</div></div>';
+                html += '<div class="rd-section"><div class="rd-label">服务编码</div><div class="rd-value">' + escHtml(iface.serviceCode || '-') + '</div></div>';
+                html += '<div class="rd-section"><div class="rd-label">描述</div><div class="rd-value">' + escHtml(iface.apiInfo || '-') + '</div></div>';
+                html += '</div>';
+                html += '<div class="rd-urls">';
+                var urls = [
+                    { label: 'DEV', url: iface.urlDev, cls: 'dev' },
+                    { label: 'UAT', url: iface.urlUat, cls: 'uat' },
+                    { label: 'PRO', url: iface.urlPro, cls: 'pro' }
+                ];
+                urls.forEach(function(u) {
+                    html += '<div class="rd-url-item"><span class="env-badge ' + u.cls + '">' + u.label + '</span><code>' + (u.url ? escHtml(u.url) : '未配置') + '</code></div>';
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+        });
+    }
+
+    function toggleAllIfaceCheck(el) {
+        var checks = document.querySelectorAll('.iface-row-check');
+        ifaceSelectedIds = [];
+        checks.forEach(function(cb) { cb.checked = el.checked; if (el.checked) ifaceSelectedIds.push(parseInt(cb.value)); });
+        updateIfaceBatchBar();
+    }
+
+    function onIfaceRowCheck() {
+        ifaceSelectedIds = [];
+        document.querySelectorAll('.iface-row-check:checked').forEach(function(cb) { ifaceSelectedIds.push(parseInt(cb.value)); });
+        var all = document.querySelectorAll('.iface-row-check');
+        document.getElementById('ifaceCheckAll').checked = all.length > 0 && ifaceSelectedIds.length === all.length;
+        updateIfaceBatchBar();
+    }
+
+    function updateIfaceBatchBar() {
+        var bar = document.getElementById('ifaceBatchBar');
+        var count = document.getElementById('ifaceBatchCount');
+        if (!bar || !count) return;
+        count.textContent = ifaceSelectedIds.length;
+        bar.style.display = ifaceSelectedIds.length > 0 ? 'flex' : 'none';
+    }
+
+    function clearIfaceBatch() {
+        ifaceSelectedIds = [];
+        document.querySelectorAll('.iface-row-check').forEach(function(cb) { cb.checked = false; });
+        document.getElementById('ifaceCheckAll').checked = false;
+        updateIfaceBatchBar();
+    }
+
+    function batchDeleteInterface() {
+        if (ifaceSelectedIds.length === 0) return;
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除选中的 ' + ifaceSelectedIds.length + ' 个接口？', { icon: 3, title: '批量删除' }, function(index) {
+            var done = 0, total = ifaceSelectedIds.length;
+            ifaceSelectedIds.forEach(function(id) {
+                ajax({ url: '/api/interface/' + id, method: 'DELETE', success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已删除 ' + total + ' 个接口', {icon:1}); loadInterface(1); } } });
+            });
+        });
+    }
+
+    function batchToggleInterface(enabled) {
+        if (ifaceSelectedIds.length === 0) return;
+        var text = enabled ? '启用' : '禁用';
+        layer.confirm('确定' + text + '选中的 ' + ifaceSelectedIds.length + ' 个接口？', { icon: 3 }, function(index) {
+            var done = 0, total = ifaceSelectedIds.length;
+            ifaceSelectedIds.forEach(function(id) {
+                ajax({ url: '/api/interface/' + id, success: function(res) {
+                    if (res.code === 200) {
+                        var obj = res.data; obj.enabled = enabled;
+                        ajax({ url: '/api/interface', method: 'PUT', contentType: 'application/json', data: JSON.stringify(obj), success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已' + text + ' ' + total + ' 个接口', {icon:1}); loadInterface(1); } } });
+                    } else { done++; if (done >= total) { layer.close(index); loadInterface(1); } }
+                }});
+            });
         });
     }
 
@@ -338,6 +466,62 @@
                 layer.msg('已复制响应内容', {icon:1, time:1500});
             });
         }
+    }
+
+    // ============================================================
+    //  虚拟滚动模式
+    // ============================================================
+    var ifaceVirtualScroll = null;
+    var ifaceAllData = [];
+
+    function toggleIfaceVirtualMode(enabled) {
+        var table = document.querySelector('#interfacePage').closest('.card').querySelector('table.layui-table');
+        var virtualContainer = document.getElementById('ifaceVirtualContainer');
+        if (enabled) {
+            table.style.display = 'none';
+            virtualContainer.style.display = '';
+            if (!ifaceVirtualScroll) {
+                ifaceVirtualScroll = new VirtualScroll('#ifaceVirtualContainer', {
+                    rowHeight: 44,
+                    buffer: 8,
+                    renderRow: function(item, i) {
+                        var statusHtml = item.enabled === 1
+                            ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
+                            : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
+                        var tcCount = item.testcaseCount != null ? item.testcaseCount : '-';
+                        return '<tr style="animation-delay:' + (i * 0.02) + 's" data-id="' + item.id + '">' +
+                            '<td style="width:40px;"><input type="checkbox" class="iface-row-check" value="' + item.id + '" onchange="onIfaceRowCheck()"></td>' +
+                            '<td style="width:30px;"><span class="row-expand-btn" onclick="toggleRowExpand(this,' + item.id + ')"><i class="fas fa-chevron-right"></i></span></td>' +
+                            '<td style="min-width:140px;"><strong>' + escHtml(item.apiName) + '</strong></td>' +
+                            '<td style="width:70px;"><span class="tag tag-primary">' + escHtml(item.method) + '</span></td>' +
+                            '<td style="width:55px;text-align:center;"><span class="tag tag-primary">' + tcCount + '</span></td>' +
+                            '<td style="width:70px;">' + statusHtml + '</td>' +
+                            '<td class="ops-cell">' +
+                            '<button class="action-btn perm" onclick="showInterfaceDetail(' + item.id + ')"><i class="fas fa-eye"></i></button>' +
+                            '<button class="action-btn edit" onclick="editInterface(' + item.id + ')"><i class="fas fa-pen"></i></button>' +
+                            '<button class="action-btn danger" onclick="deleteInterface(' + item.id + ')"><i class="fas fa-trash"></i></button>' +
+                            '</td></tr>';
+                    }
+                });
+            }
+            loadIfaceAllData();
+        } else {
+            table.style.display = '';
+            virtualContainer.style.display = 'none';
+            if (ifaceVirtualScroll) { ifaceVirtualScroll.destroy(); ifaceVirtualScroll = null; }
+            loadInterface(1);
+        }
+    }
+
+    function loadIfaceAllData() {
+        ajax({
+            url: '/api/interface/page?pageNum=1&pageSize=9999',
+            success: function(res) {
+                if (res.code !== 200) return;
+                ifaceAllData = res.data.records || [];
+                if (ifaceVirtualScroll) ifaceVirtualScroll.setData(ifaceAllData);
+            }
+        });
     }
     </script>
 </div>

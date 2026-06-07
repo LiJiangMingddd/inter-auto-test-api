@@ -6,16 +6,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.ApiTestcase;
 import com.lm.interautotestapi.service.ApiTestcaseService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import javax.annotation.Resource;
 
 @RestController
 @RequestMapping("/api/testcase")
+@RequiredArgsConstructor
 public class ApiTestcaseController {
 
-    @Resource
-    private ApiTestcaseService apiTestcaseService;
+    private final ApiTestcaseService apiTestcaseService;
 
     @GetMapping("/page")
     @SaCheckPermission("case:manage")

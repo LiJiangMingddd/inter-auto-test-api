@@ -3,21 +3,22 @@ package com.lm.interautotestapi.controller;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lm.interautotestapi.common.PasswordUtil;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.SysUser;
 import com.lm.interautotestapi.service.SysUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Resource
-    private SysUserService sysUserService;
+    private final SysUserService sysUserService;
 
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody Map<String, String> body) {
@@ -35,11 +36,12 @@ public class AuthController {
             return Result.fail("用户已被禁用");
         }
 
-        // 密码校验：对传入密码做 MD5 后与数据库对比
-        String md5Password = SecureUtil.md5(password);
-        if (!md5Password.equals(user.getPassword())) {
+        if (!verifyPassword(password, user.getPassword())) {
             return Result.fail("密码错误");
         }
+
+        upgradePasswordIfNeeded(user, password);
+
         StpUtil.login(user.getId());
         String token = StpUtil.getTokenValue();
         Map<String, Object> result = new HashMap<>();
@@ -86,7 +88,6 @@ public class AuthController {
 
     @PostMapping("/changePassword")
     public Result<Void> changePassword(@RequestBody Map<String, String> body) {
-        // 1. 校验是否已登录
         if (!StpUtil.isLogin()) {
             return Result.fail(401, "用户未登录");
         }
@@ -95,7 +96,6 @@ public class AuthController {
         String newPassword = body.get("newPassword");
         String confirmPassword = body.get("confirmPassword");
 
-        // 2. 参数校验
         if (oldPassword == null || oldPassword.isEmpty()) {
             return Result.fail(400, "旧密码不能为空");
         }
@@ -112,25 +112,18 @@ public class AuthController {
             return Result.fail(400, "新密码不能与旧密码相同");
         }
 
-        // 3. 获取当前登录用户
         Long userId = StpUtil.getLoginIdAsLong();
         SysUser user = sysUserService.getById(userId);
         if (user == null) {
             return Result.fail("用户不存在");
         }
 
-        // 4. 校验旧密码
-        String md5OldPassword = SecureUtil.md5(oldPassword);
-        if (!md5OldPassword.equals(user.getPassword())) {
+        if (!verifyPassword(oldPassword, user.getPassword())) {
             return Result.fail(400, "旧密码错误");
         }
 
-        // 5. 更新密码
-        user.setPassword(SecureUtil.md5(newPassword));
+        user.setPassword(PasswordUtil.encode(newPassword));
         sysUserService.updateById(user);
-
-        // 6. 可选：让用户重新登录（强制下线）
-        // StpUtil.logout(userId);
 
         return Result.ok();
     }
@@ -148,5 +141,23 @@ public class AuthController {
         result.put("roles", StpUtil.getRoleList());
         result.put("permissions", StpUtil.getPermissionList());
         return Result.ok(result);
+    }
+
+    private boolean verifyPassword(String rawPassword, String storedPassword) {
+        if (storedPassword == null) {
+            return false;
+        }
+        if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
+            return PasswordUtil.matches(rawPassword, storedPassword);
+        }
+        String md5Password = SecureUtil.md5(rawPassword);
+        return md5Password.equals(storedPassword);
+    }
+
+    private void upgradePasswordIfNeeded(SysUser user, String rawPassword) {
+        if (user.getPassword() != null && !user.getPassword().startsWith("$2")) {
+            user.setPassword(PasswordUtil.encode(rawPassword));
+            sysUserService.updateById(user);
+        }
     }
 }

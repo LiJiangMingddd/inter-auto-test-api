@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS api_testcase (
 -- ============================================================
 -- 3. 用户表
 --    app_id / app_key：Open API 认证凭证，创建时自动生成
---    password 和 app_key 均存储 MD5 加密值
+--    password：优先使用 BCrypt 加密，兼容旧版 MD5（首次登录自动升级）
+--    app_key 存储 MD5 加密值
 -- ============================================================
 CREATE TABLE IF NOT EXISTS sys_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

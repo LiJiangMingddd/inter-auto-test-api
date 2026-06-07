@@ -7,24 +7,21 @@ import com.lm.interautotestapi.entity.SysRolePermission;
 import com.lm.interautotestapi.entity.SysUserRole;
 import com.lm.interautotestapi.service.SysRolePermissionService;
 import com.lm.interautotestapi.service.SysUserRoleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/assign")
+@RequiredArgsConstructor
 public class AssignController {
 
-    @Resource
-    private SysUserRoleService sysUserRoleService;
-
-    @Resource
-    private SysRolePermissionService sysRolePermissionService;
-
-    // ========== 用户角色分配 ==========
+    private final SysUserRoleService sysUserRoleService;
+    private final SysRolePermissionService sysRolePermissionService;
 
     @GetMapping("/user/{userId}/roles")
     @SaCheckPermission("user:manage")
@@ -41,17 +38,17 @@ public class AssignController {
         List<Long> roleIds = body.get("roleIds");
         sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
         if (roleIds != null && !roleIds.isEmpty()) {
+            List<SysUserRole> list = new ArrayList<>();
             for (Long roleId : roleIds) {
                 SysUserRole ur = new SysUserRole();
                 ur.setUserId(userId);
                 ur.setRoleId(roleId);
-                sysUserRoleService.save(ur);
+                list.add(ur);
             }
+            sysUserRoleService.saveBatch(list);
         }
         return Result.ok();
     }
-
-    // ========== 角色权限分配 ==========
 
     @GetMapping("/role/{roleId}/permissions")
     @SaCheckPermission("role:manage")
@@ -68,12 +65,14 @@ public class AssignController {
         List<Long> permIds = body.get("permIds");
         sysRolePermissionService.remove(new LambdaQueryWrapper<SysRolePermission>().eq(SysRolePermission::getRoleId, roleId));
         if (permIds != null && !permIds.isEmpty()) {
+            List<SysRolePermission> list = new ArrayList<>();
             for (Long permId : permIds) {
                 SysRolePermission rp = new SysRolePermission();
                 rp.setRoleId(roleId);
                 rp.setPermId(permId);
-                sysRolePermissionService.save(rp);
+                list.add(rp);
             }
+            sysRolePermissionService.saveBatch(list);
         }
         return Result.ok();
     }

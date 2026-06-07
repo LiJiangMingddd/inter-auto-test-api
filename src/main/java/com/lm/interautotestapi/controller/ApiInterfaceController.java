@@ -2,27 +2,27 @@ package com.lm.interautotestapi.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.ApiInterface;
 import com.lm.interautotestapi.entity.ApiTestcase;
 import com.lm.interautotestapi.service.ApiInterfaceService;
 import com.lm.interautotestapi.service.ApiTestcaseService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/interface")
+@RequiredArgsConstructor
 public class ApiInterfaceController {
 
-    @Resource
-    private ApiInterfaceService apiInterfaceService;
-
-    @Resource
-    private ApiTestcaseService apiTestcaseService;
+    private final ApiInterfaceService apiInterfaceService;
+    private final ApiTestcaseService apiTestcaseService;
 
     @GetMapping("/page")
     @SaCheckPermission("api:manage")
@@ -56,7 +56,27 @@ public class ApiInterfaceController {
             }
         }
         wrapper.orderByDesc(ApiInterface::getId);
-        return Result.ok(apiInterfaceService.page(page, wrapper));
+        Page<ApiInterface> result = apiInterfaceService.page(page, wrapper);
+        List<Long> ids = result.getRecords().stream().map(ApiInterface::getId).collect(Collectors.toList());
+        if (!ids.isEmpty()) {
+            QueryWrapper<ApiTestcase> tcQuery = new QueryWrapper<>();
+            tcQuery.select("interface_id", "COUNT(*) AS cnt").in("interface_id", ids).groupBy("interface_id");
+            List<Map<String, Object>> countList = apiTestcaseService.getBaseMapper().selectMaps(tcQuery);
+            Map<Long, Integer> tcCountMap = new HashMap<>();
+            for (Map<String, Object> row : countList) {
+                Object ifaceIdObj = row.get("interface_id");
+                Object cntObj = row.get("cnt");
+                if (ifaceIdObj != null) {
+                    Long ifaceId = ifaceIdObj instanceof Long ? (Long) ifaceIdObj : Long.valueOf(ifaceIdObj.toString());
+                    int cnt = cntObj != null ? (cntObj instanceof Long ? ((Long) cntObj).intValue() : Integer.parseInt(cntObj.toString())) : 0;
+                    tcCountMap.put(ifaceId, cnt);
+                }
+            }
+            for (ApiInterface iface : result.getRecords()) {
+                iface.setTestcaseCount(tcCountMap.getOrDefault(iface.getId(), 0));
+            }
+        }
+        return Result.ok(result);
     }
 
     @GetMapping("/{id}")

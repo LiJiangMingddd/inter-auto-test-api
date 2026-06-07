@@ -2,41 +2,33 @@ package com.lm.interautotestapi.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.ApiInterface;
 import com.lm.interautotestapi.entity.ApiTestcase;
-import com.lm.interautotestapi.entity.SysUser;
 import com.lm.interautotestapi.service.ApiInterfaceService;
 import com.lm.interautotestapi.service.ApiTestcaseService;
 import com.lm.interautotestapi.service.SysUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/dashboard")
+@RequiredArgsConstructor
 public class DashboardController {
 
-    @Resource
-    private ApiInterfaceService apiInterfaceService;
+    private final ApiInterfaceService apiInterfaceService;
+    private final ApiTestcaseService apiTestcaseService;
+    private final SysUserService sysUserService;
 
-    @Resource
-    private ApiTestcaseService apiTestcaseService;
-
-    @Resource
-    private SysUserService sysUserService;
-
-    /**
-     * 总体统计概览
-     */
     @GetMapping("/stats")
     @SaCheckPermission("api:manage")
     public Result<Map<String, Object>> stats() {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 1. 总数统计
         long totalInterfaces = apiInterfaceService.count();
         long totalTestcases = apiTestcaseService.count();
         long totalUsers = sysUserService.count();
@@ -48,15 +40,37 @@ public class DashboardController {
         result.put("totalUsers", totalUsers);
         result.put("enabledInterfaces", enabledInterfaces);
 
-        // 2. 每个接口的用例数量（用于图表）
         List<ApiInterface> allInterfaces = apiInterfaceService.list(
-                new LambdaQueryWrapper<ApiInterface>().orderByDesc(ApiInterface::getId));
+                new LambdaQueryWrapper<ApiInterface>()
+                        .select(ApiInterface::getId, ApiInterface::getApiName, ApiInterface::getMethod)
+                        .orderByDesc(ApiInterface::getId));
+        List<Long> interfaceIds = allInterfaces.stream().map(ApiInterface::getId).collect(Collectors.toList());
+
+        Map<Long, Long> tcCountMap = Collections.emptyMap();
+        if (!interfaceIds.isEmpty()) {
+            QueryWrapper<ApiTestcase> queryWrapper = new QueryWrapper<>();
+            queryWrapper.select("interface_id", "COUNT(*) AS cnt")
+                    .in("interface_id", interfaceIds)
+                    .groupBy("interface_id");
+            List<Map<String, Object>> countList = apiTestcaseService.getBaseMapper().selectMaps(queryWrapper);
+            tcCountMap = new HashMap<>();
+            for (Map<String, Object> row : countList) {
+                Object ifaceIdObj = row.get("interface_id");
+                Object cntObj = row.get("cnt");
+                if (ifaceIdObj != null) {
+                    Long ifaceId = ifaceIdObj instanceof Long ? (Long) ifaceIdObj : Long.valueOf(ifaceIdObj.toString());
+                    Long cnt = cntObj != null ? (cntObj instanceof Long ? (Long) cntObj : Long.valueOf(cntObj.toString())) : 0L;
+                    tcCountMap.put(ifaceId, cnt);
+                }
+            }
+        }
+
         List<Map<String, Object>> interfaceTcStats = new ArrayList<>();
         List<String> chartNames = new ArrayList<>();
         List<Integer> chartCounts = new ArrayList<>();
+        List<Long> chartIds = new ArrayList<>();
         for (ApiInterface iface : allInterfaces) {
-            long count = apiTestcaseService.count(
-                    new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getInterfaceId, iface.getId()));
+            long count = tcCountMap.getOrDefault(iface.getId(), 0L);
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("apiName", iface.getApiName());
             item.put("method", iface.getMethod());
@@ -64,12 +78,13 @@ public class DashboardController {
             interfaceTcStats.add(item);
             chartNames.add(iface.getApiName());
             chartCounts.add((int) count);
+            chartIds.add(iface.getId());
         }
         result.put("interfaceTcStats", interfaceTcStats);
         result.put("chartNames", chartNames);
         result.put("chartCounts", chartCounts);
+        result.put("chartIds", chartIds);
 
-        // 3. 按环境统计用例数
         long devCount = apiTestcaseService.count(
                 new LambdaQueryWrapper<ApiTestcase>().eq(ApiTestcase::getEnv, "dev"));
         long uatCount = apiTestcaseService.count(

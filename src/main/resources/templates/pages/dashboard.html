@@ -95,29 +95,65 @@
 }
 .chart-anim { animation:chartFadeUp .6s ease both; }
 .chart-anim:nth-child(2) { animation-delay:.15s; }
+.chart-anim:nth-child(3) { animation-delay:.3s; }
+.chart-anim:nth-child(4) { animation-delay:.45s; }
+
+/* ---- 时间线 ---- */
+.timeline-list { list-style:none; padding:0; margin:0; }
+.timeline-item {
+    display:flex; align-items:flex-start; gap:12px;
+    padding:10px 0; border-bottom:1px solid var(--border-light);
+    font-size:13px; transition:background .2s;
+}
+.timeline-item:last-child { border-bottom:none; }
+.timeline-item:hover { background:rgba(102,126,234,.04); }
+.timeline-dot {
+    width:10px; height:10px; border-radius:50%; margin-top:5px; flex-shrink:0;
+}
+.timeline-dot.pass { background:#38ef7d; box-shadow:0 0 8px rgba(56,239,125,.3); }
+.timeline-dot.fail { background:#f5576c; box-shadow:0 0 8px rgba(245,87,108,.3); }
+.timeline-dot.pending { background:#ffa726; box-shadow:0 0 8px rgba(255,167,38,.3); }
+.timeline-info { flex:1; min-width:0; }
+.timeline-title { color:var(--text-primary); font-weight:500; }
+.timeline-meta { color:var(--text-muted); font-size:11px; margin-top:2px; }
+
+/* ---- 热力图 ---- */
+.heatmap-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(80px,1fr)); gap:8px; }
+.heatmap-cell {
+    border-radius:8px; padding:10px 8px; text-align:center;
+    font-size:11px; transition:all .3s; cursor:pointer;
+    border:1px solid transparent;
+}
+.heatmap-cell:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.15); }
+.heatmap-cell .hm-name { font-weight:600; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.heatmap-cell .hm-count { font-size:10px; opacity:.7; }
+.heatmap-cell.hm-good { background:rgba(56,239,125,.12); color:#38ef7d; border-color:rgba(56,239,125,.2); }
+.heatmap-cell.hm-warn { background:rgba(255,167,38,.12); color:#ffa726; border-color:rgba(255,167,38,.2); }
+.heatmap-cell.hm-bad { background:rgba(245,87,108,.12); color:#f5576c; border-color:rgba(245,87,108,.2); }
+.heatmap-cell.hm-empty { background:var(--bg-card); color:var(--text-muted); border-color:var(--border-color); }
 </style>
 
 <!-- 统计卡片（炫酷渐变） -->
 <div class="dash-grid">
-    <div class="dash-card card-purple">
+    <div class="dash-card card-purple card-stagger">
         <div class="card-bg-icon"><i class="fas fa-plug"></i></div>
         <div class="card-icon"><i class="fas fa-plug"></i></div>
         <div class="card-number" id="statInterfaces">0</div>
         <div class="card-label">接 口 总 数</div>
     </div>
-    <div class="dash-card card-green">
+    <div class="dash-card card-green card-stagger">
         <div class="card-bg-icon"><i class="fas fa-vial"></i></div>
         <div class="card-icon"><i class="fas fa-flask"></i></div>
         <div class="card-number" id="statTestcases">0</div>
         <div class="card-label">用 例 总 数</div>
     </div>
-    <div class="dash-card card-orange">
+    <div class="dash-card card-orange card-stagger">
         <div class="card-bg-icon"><i class="fas fa-users"></i></div>
         <div class="card-icon"><i class="fas fa-users"></i></div>
         <div class="card-number" id="statUsers">0</div>
         <div class="card-label">用 户 总 数</div>
     </div>
-    <div class="dash-card card-blue">
+    <div class="dash-card card-blue card-stagger">
         <div class="card-bg-icon"><i class="fas fa-check-circle"></i></div>
         <div class="card-icon"><i class="fas fa-check-circle"></i></div>
         <div class="card-number" id="statEnabled">0</div>
@@ -127,14 +163,33 @@
 
 <!-- ECharts 图表 -->
 <div class="chart-grid">
-    <div class="chart-box chart-anim">
+    <div class="chart-box chart-anim card-glow">
+        <div class="glow-spot"></div>
         <div class="chart-title"><i class="fas fa-chart-bar"></i> 各接口用例数量</div>
         <div id="chartInterface" style="height:300px;"></div>
     </div>
-    <div class="chart-box chart-anim">
+    <div class="chart-box chart-anim card-glow">
+        <div class="glow-spot"></div>
         <div class="chart-title"><i class="fas fa-chart-pie"></i> 用例环境分布</div>
         <div id="chartEnv" style="height:300px;"></div>
     </div>
+    <div class="chart-box chart-anim card-glow">
+        <div class="glow-spot"></div>
+        <div class="chart-title"><i class="fas fa-gauge-high"></i> 通过率仪表盘</div>
+        <div id="chartGauge" style="height:300px;"></div>
+    </div>
+    <div class="chart-box chart-anim card-glow">
+        <div class="glow-spot"></div>
+        <div class="chart-title"><i class="fas fa-clock-rotate-left"></i> 最近执行时间线</div>
+        <div id="timelineContainer" style="height:300px;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- 接口健康度热力图 -->
+<div class="chart-box chart-anim card-glow" style="margin-top:18px;">
+    <div class="glow-spot"></div>
+    <div class="chart-title"><i class="fas fa-heart-pulse"></i> 接口健康度热力图</div>
+    <div id="heatmapContainer" class="heatmap-grid"></div>
 </div>
 
 <script>
@@ -145,15 +200,13 @@ function loadDashboard() {
             if (res.code !== 200) return;
             var d = res.data;
 
-            // 炫酷数字跳动效果
             animateNumber('statInterfaces', d.totalInterfaces || 0);
             animateNumber('statTestcases', d.totalTestcases || 0);
             animateNumber('statUsers', d.totalUsers || 0);
             animateNumber('statEnabled', d.enabledInterfaces || 0);
 
-            // 渲染图表
             if (typeof echarts !== 'undefined') {
-                // ====== 柱状图：各接口用例数（炫酷版） ======
+                // ====== 柱状图：各接口用例数 ======
                 var chart1 = echarts.init(document.getElementById('chartInterface'));
                 chart1.setOption({
                     tooltip: {
@@ -207,8 +260,13 @@ function loadDashboard() {
                         animationEasing: 'cubicOut'
                     }]
                 });
+                chart1.on('click', function(params) {
+                    if (params.dataIndex !== undefined && d.chartIds && d.chartIds[params.dataIndex]) {
+                        if (typeof switchTab === 'function') switchTab('interface');
+                    }
+                });
 
-                // ====== 饼图：环境分布（炫酷版） ======
+                // ====== 饼图：环境分布 ======
                 var chart2 = echarts.init(document.getElementById('chartEnv'));
                 chart2.setOption({
                     tooltip: {
@@ -253,26 +311,145 @@ function loadDashboard() {
                     }]
                 });
 
-                // 自适应（单例模式：防止重复注册 resize 监听）
+                // ====== 仪表盘：通过率 ======
+                var chart3 = echarts.init(document.getElementById('chartGauge'));
+                var enabledRate = d.totalInterfaces > 0 ? Math.round((d.enabledInterfaces / d.totalInterfaces) * 100) : 0;
+                chart3.setOption({
+                    series: [{
+                        type: 'gauge',
+                        startAngle: 220,
+                        endAngle: -40,
+                        min: 0,
+                        max: 100,
+                        splitNumber: 10,
+                        radius: '85%',
+                        center: ['50%', '55%'],
+                        axisLine: {
+                            lineStyle: {
+                                width: 18,
+                                color: [
+                                    [0.3, '#f5576c'],
+                                    [0.7, '#ffa726'],
+                                    [1, '#38ef7d']
+                                ]
+                            }
+                        },
+                        pointer: {
+                            icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
+                            length: '55%',
+                            width: 10,
+                            offsetCenter: [0, '-10%'],
+                            itemStyle: { color: 'auto' }
+                        },
+                        axisTick: { length: 6, lineStyle: { color: 'auto', width: 1 } },
+                        splitLine: { length: 14, lineStyle: { color: 'auto', width: 2 } },
+                        axisLabel: { color: '#999', fontSize: 11, distance: 20 },
+                        detail: {
+                            valueAnimation: true,
+                            formatter: '{value}%',
+                            color: 'inherit',
+                            fontSize: 28,
+                            fontWeight: 'bold',
+                            offsetCenter: [0, '40%']
+                        },
+                        title: {
+                            offsetCenter: [0, '60%'],
+                            fontSize: 13,
+                            color: '#999'
+                        },
+                        data: [{ value: enabledRate, name: '启用率' }],
+                        animationDuration: 1200,
+                        animationEasing: 'cubicOut'
+                    }]
+                });
+
+                // 自适应
                 if (!window._dashChartsResized) {
                     window._dashChartsResized = true;
                     var resizeTimer;
                     window.addEventListener('resize', function() {
                         clearTimeout(resizeTimer);
                         resizeTimer = setTimeout(function() {
-                            if (typeof chart1 !== 'undefined' && chart1) chart1.resize();
-                            if (typeof chart2 !== 'undefined' && chart2) chart2.resize();
+                            if (chart1) chart1.resize();
+                            if (chart2) chart2.resize();
+                            if (chart3) chart3.resize();
                         }, 150);
                     });
                 }
             }
+
+            // ====== 时间线：模拟最近执行记录 ======
+            loadTimeline();
+
+            // ====== 热力图：接口健康度 ======
+            loadHeatmap(d);
         }
     });
 }
 
-/**
- * 数字跳动动画——从0滚动到目标值
- */
+function loadTimeline() {
+    var container = document.getElementById('timelineContainer');
+    if (!container) return;
+    ajax({
+        url: '/api/interface/page?pageNum=1&pageSize=10',
+        success: function(res) {
+            if (res.code !== 200 || !res.data) return;
+            var records = res.data.records || [];
+            var html = '<ul class="timeline-list">';
+            if (records.length === 0) {
+                html += '<div style="text-align:center;padding:40px 0;color:var(--text-muted);"><i class="fas fa-clock" style="font-size:24px;display:block;margin-bottom:8px;"></i>暂无执行记录</div>';
+            } else {
+                records.forEach(function(item, i) {
+                    var status = item.enabled === 1 ? 'pass' : 'fail';
+                    var statusText = item.enabled === 1 ? '启用' : '禁用';
+                    var methodColor = item.method === 'GET' ? '#4facfe' : item.method === 'POST' ? '#38ef7d' : item.method === 'DELETE' ? '#f5576c' : '#ffa726';
+                    html += '<li class="timeline-item">' +
+                        '<span class="timeline-dot ' + status + '"></span>' +
+                        '<div class="timeline-info">' +
+                        '<div class="timeline-title">' + escHtml(item.apiName) + '</div>' +
+                        '<div class="timeline-meta">' +
+                        '<span style="color:' + methodColor + ';font-weight:600;">' + escHtml(item.method) + '</span>' +
+                        ' · <span class="tag ' + (item.enabled === 1 ? 'tag-success' : 'tag-danger') + '" style="font-size:10px;padding:1px 6px;">' + statusText + '</span>' +
+                        ' · ' + (item.testcaseCount || 0) + ' 条用例' +
+                        '</div></div></li>';
+                });
+            }
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+    });
+}
+
+function loadHeatmap(d) {
+    var container = document.getElementById('heatmapContainer');
+    if (!container) return;
+    ajax({
+        url: '/api/interface/page?pageNum=1&pageSize=50',
+        success: function(res) {
+            if (res.code !== 200 || !res.data) return;
+            var records = res.data.records || [];
+            var html = '';
+            if (records.length === 0) {
+                html = '<div style="text-align:center;padding:30px 0;color:var(--text-muted);grid-column:1/-1;"><i class="fas fa-heart-pulse" style="font-size:24px;display:block;margin-bottom:8px;"></i>暂无接口数据</div>';
+            } else {
+                records.forEach(function(item) {
+                    var tc = item.testcaseCount || 0;
+                    var cls = tc === 0 ? 'hm-empty' : tc <= 2 ? 'hm-bad' : tc <= 5 ? 'hm-warn' : 'hm-good';
+                    html += '<div class="heatmap-cell ' + cls + '" onclick="switchTab(\'interface\')" title="' + escHtml(item.apiName) + ' - ' + tc + ' 条用例">' +
+                        '<div class="hm-name">' + escHtml(item.apiName) + '</div>' +
+                        '<div class="hm-count">' + tc + ' 用例</div></div>';
+                });
+            }
+            container.innerHTML = html;
+        }
+    });
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function animateNumber(elemId, target) {
     var el = document.getElementById(elemId);
     if (!el) return;
@@ -282,7 +459,6 @@ function animateNumber(elemId, target) {
     function step(timestamp) {
         if (!startTime) startTime = timestamp;
         var progress = Math.min((timestamp - startTime) / duration, 1);
-        // easeOutExpo 缓出效果
         var eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
         var current = Math.round(start + (target - start) * eased);
         el.textContent = current;

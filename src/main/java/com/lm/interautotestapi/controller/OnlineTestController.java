@@ -5,19 +5,19 @@ import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.model.OnlineTestRequest;
 import com.lm.interautotestapi.model.OnlineTestResponse;
 import com.lm.interautotestapi.service.OnlineTestService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import javax.validation.Valid;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/online-test")
+@RequiredArgsConstructor
 public class OnlineTestController {
 
-    @Resource
-    private OnlineTestService onlineTestService;
+    private final OnlineTestService onlineTestService;
 
     @PostMapping("/execute")
     @SaCheckPermission("case:manage")

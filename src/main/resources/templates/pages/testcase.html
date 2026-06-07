@@ -5,7 +5,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="testcase-page">
-    <div class="card">
+    <div class="card card-glow">
+        <div class="glow-spot"></div>
         <div class="card-header">
             <h3><i class="fas fa-vial"></i> 用例列表</h3>
             <div class="toolbar">
@@ -26,9 +27,20 @@
                 </button>
             </div>
         </div>
+        <!-- 批量操作栏 -->
+        <div class="batch-bar" id="tcBatchBar">
+            <span>已选择 <span class="batch-count" id="tcBatchCount">0</span> 项</span>
+            <button class="layui-btn layui-btn-sm layui-btn-danger" onclick="batchDeleteTestcase()"><i class="fas fa-trash"></i> 批量删除</button>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="batchToggleTestcase(1)"><i class="fas fa-toggle-on"></i> 批量启用</button>
+            <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="batchToggleTestcase(0)"><i class="fas fa-toggle-off"></i> 批量禁用</button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="clearTcBatch()"><i class="fas fa-times"></i> 取消</button>
+        </div>
         <table class="layui-table" lay-skin="line" style="table-layout:auto;">
             <thead>
             <tr>
+                <th style="width:40px;"><input type="checkbox" id="tcCheckAll" onchange="toggleAllTcCheck(this)"></th>
+                <th style="width:30px;"></th>
+                <th style="width:30px;"><i class="fas fa-grip-vertical" style="color:var(--text-muted);font-size:11px;" title="拖拽排序"></i></th>
                 <th style="min-width:120px;">用例标题</th>
                 <th style="width:70px;">环境</th>
                 <th style="width:55px;">排序</th>
@@ -37,8 +49,15 @@
             </tr>
             </thead>
             <tbody id="testcaseTbody"></tbody>
-        </table>
-        <div id="testcasePage" style="text-align:center;padding:10px 0;"></div>
+        </table><!-- 虚拟滚动容器（大数据模式） -->
+        <div id="tcVirtualContainer" style="display:none;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div id="testcasePage" style="text-align:center;flex:1;"></div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;white-space:nowrap;" title="数据量较大时启用虚拟滚动提升性能">
+                <input type="checkbox" id="tcVirtualToggle" onchange="toggleTcVirtualMode(this.checked)" style="vertical-align:middle;">
+                <i class="fas fa-bolt" style="color:#667eea;"></i> 虚拟滚动
+            </label>
+        </div>
     </div>
 
     <script>
@@ -47,6 +66,8 @@
     // ============================================================
 
     /** 加载用例列表 */
+    var tcSelectedIds = [];
+    var tcDragSrcId = null;
     function loadTestcase(page) {
         var keyword = document.getElementById('tcKeyword') ? document.getElementById('tcKeyword').value : '';
         var env = document.getElementById('tcEnv') ? document.getElementById('tcEnv').value : '';
@@ -58,6 +79,8 @@
             success: function(res) {
                 if (res.code !== 200) { layer.msg(res.msg); return; }
                 var data = res.data, html = '';
+                tcSelectedIds = [];
+                updateTcBatchBar();
                 (data.records || []).forEach(function(item, i) {
                     var statusHtml = item.enabled === 1
                         ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
@@ -68,7 +91,10 @@
                         : '<span class="tag tag-primary">' + (item.env||'DEV') + '</span>';
                     var tcErrors = validateTestcase(item);
                     var warnHtml = tcErrors.length > 0 ? ' <span class="format-warning">' + buildWarnDot(tcErrors) + '</span>' : '';
-                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's">' +
+                    html += '<tr class="table-row-enter" style="animation-delay:' + (i * 0.05) + 's" data-id="' + item.id + '" draggable="true" ondragstart="onTcDragStart(event,' + item.id + ')" ondragover="onTcDragOver(event)" ondrop="onTcDrop(event,' + item.id + ')" ondragend="onTcDragEnd(event)">' +
+                        '<td><input type="checkbox" class="tc-row-check" value="' + item.id + '" onchange="onTcRowCheck()"></td>' +
+                        '<td><span class="row-expand-btn" onclick="toggleTcRowExpand(this,' + item.id + ')"><i class="fas fa-chevron-right"></i></span></td>' +
+                        '<td><span class="drag-handle" title="拖拽排序"><i class="fas fa-grip-vertical"></i></span></td>' +
                         '<td><span class="cell-tip"><strong>' + escHtml(item.caseTitle) + '</strong><span class="tip-content">' + escHtml(item.caseTitle) + '</span></span>' + warnHtml + '</td>' +
                         '<td>' + envHtml + '</td>' +
                         '<td>' + (item.sortOrder||0) + '</td>' +
@@ -78,14 +104,165 @@
                         '<button class="action-btn edit" onclick="editTestcase(' + item.id + ')"><i class="fas fa-pen"></i> 编辑</button>' +
                         '<button class="action-btn danger" onclick="deleteTestcase(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
                         '</td></tr>';
+                    html += '<tr class="row-expand-detail" id="tcRowDetail_' + item.id + '" style="display:none;"><td colspan="8">' +
+                        '<div class="row-detail-content" id="tcRowDetailContent_' + item.id + '"></div></td></tr>';
                 });
                 if (!html) {
-                    html = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-flask"></i><p>暂无用例数据</p></div></td></tr>';
+                    html = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-flask"></i><p>暂无用例数据</p></div></td></tr>';
                 }
                 document.getElementById('testcaseTbody').innerHTML = html;
                 renderPager('testcasePage', data, loadTestcase);
             }
         });
+    }
+
+    function toggleTcRowExpand(btn, id) {
+        var detailRow = document.getElementById('tcRowDetail_' + id);
+        var icon = btn.querySelector('i');
+        if (detailRow.style.display === 'none') {
+            detailRow.style.display = '';
+            icon.className = 'fas fa-chevron-down';
+            btn.classList.add('expanded');
+            loadTcRowDetail(id);
+        } else {
+            detailRow.style.display = 'none';
+            icon.className = 'fas fa-chevron-right';
+            btn.classList.remove('expanded');
+        }
+    }
+
+    function loadTcRowDetail(id) {
+        var container = document.getElementById('tcRowDetailContent_' + id);
+        if (!container || container.innerHTML) return;
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
+        ajax({
+            url: '/api/testcase/' + id,
+            success: function(res) {
+                if (res.code !== 200) { container.innerHTML = '<div style="color:#ef5350;">加载失败</div>'; return; }
+                var tc = res.data;
+                var html = '<div class="row-detail-grid">';
+                html += '<div class="rd-section"><div class="rd-label">环境</div><div class="rd-value"><span class="env-badge ' + (tc.env||'dev') + '">' + (tc.env||'dev').toUpperCase() + '</span></div></div>';
+                html += '<div class="rd-section"><div class="rd-label">排序</div><div class="rd-value">' + (tc.sortOrder||0) + '</div></div>';
+                html += '<div class="rd-section"><div class="rd-label">状态</div><div class="rd-value">' + (tc.enabled === 1 ? '<span class="tag tag-success">启用</span>' : '<span class="tag tag-danger">禁用</span>') + '</div></div>';
+                html += '<div class="rd-section"><div class="rd-label">接口ID</div><div class="rd-value">' + (tc.interfaceId||'-') + '</div></div>';
+                html += '</div>';
+                if (tc.caseData) {
+                    html += '<div class="rd-section" style="margin-top:10px;"><div class="rd-label">请求数据</div><div class="rd-value"><pre style="margin:0;background:var(--input-bg);border:1px solid var(--border-color);border-radius:6px;padding:8px 12px;font-size:12px;font-family:monospace;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;">' + escHtml(formatJsonStr(tc.caseData)) + '</pre></div></div>';
+                }
+                if (tc.checkRules) {
+                    html += '<div class="rd-section" style="margin-top:10px;"><div class="rd-label">断言规则</div><div class="rd-value"><pre style="margin:0;background:var(--input-bg);border:1px solid var(--border-color);border-radius:6px;padding:8px 12px;font-size:12px;font-family:monospace;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;">' + escHtml(formatJsonStr(tc.checkRules)) + '</pre></div></div>';
+                }
+                if (tc.expectedResults) {
+                    html += '<div class="rd-section" style="margin-top:10px;"><div class="rd-label">期望结果</div><div class="rd-value"><pre style="margin:0;background:var(--input-bg);border:1px solid var(--border-color);border-radius:6px;padding:8px 12px;font-size:12px;font-family:monospace;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;">' + escHtml(formatJsonStr(tc.expectedResults)) + '</pre></div></div>';
+                }
+                container.innerHTML = html;
+            }
+        });
+    }
+
+    function formatJsonStr(str) {
+        if (!str) return '-';
+        try { return JSON.stringify(JSON.parse(str), null, 2); } catch(e) { return str; }
+    }
+
+    function toggleAllTcCheck(el) {
+        var checks = document.querySelectorAll('.tc-row-check');
+        tcSelectedIds = [];
+        checks.forEach(function(cb) { cb.checked = el.checked; if (el.checked) tcSelectedIds.push(parseInt(cb.value)); });
+        updateTcBatchBar();
+    }
+
+    function onTcRowCheck() {
+        tcSelectedIds = [];
+        document.querySelectorAll('.tc-row-check:checked').forEach(function(cb) { tcSelectedIds.push(parseInt(cb.value)); });
+        var all = document.querySelectorAll('.tc-row-check');
+        document.getElementById('tcCheckAll').checked = all.length > 0 && tcSelectedIds.length === all.length;
+        updateTcBatchBar();
+    }
+
+    function updateTcBatchBar() {
+        var bar = document.getElementById('tcBatchBar');
+        var count = document.getElementById('tcBatchCount');
+        if (!bar || !count) return;
+        count.textContent = tcSelectedIds.length;
+        bar.style.display = tcSelectedIds.length > 0 ? 'flex' : 'none';
+    }
+
+    function clearTcBatch() {
+        tcSelectedIds = [];
+        document.querySelectorAll('.tc-row-check').forEach(function(cb) { cb.checked = false; });
+        document.getElementById('tcCheckAll').checked = false;
+        updateTcBatchBar();
+    }
+
+    function batchDeleteTestcase() {
+        if (tcSelectedIds.length === 0) return;
+        layer.confirm('<i class="fas fa-exclamation-triangle" style="color:#ff6b6b;margin-right:8px;"></i> 确定删除选中的 ' + tcSelectedIds.length + ' 个用例？', { icon: 3, title: '批量删除' }, function(index) {
+            var done = 0, total = tcSelectedIds.length;
+            tcSelectedIds.forEach(function(id) {
+                ajax({ url: '/api/testcase/' + id, method: 'DELETE', success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已删除 ' + total + ' 个用例', {icon:1}); loadTestcase(1); } } });
+            });
+        });
+    }
+
+    function batchToggleTestcase(enabled) {
+        if (tcSelectedIds.length === 0) return;
+        var text = enabled ? '启用' : '禁用';
+        layer.confirm('确定' + text + '选中的 ' + tcSelectedIds.length + ' 个用例？', { icon: 3 }, function(index) {
+            var done = 0, total = tcSelectedIds.length;
+            tcSelectedIds.forEach(function(id) {
+                ajax({ url: '/api/testcase/' + id, success: function(res) {
+                    if (res.code === 200) {
+                        var obj = res.data; obj.enabled = enabled;
+                        ajax({ url: '/api/testcase', method: 'PUT', contentType: 'application/json', data: JSON.stringify(obj), success: function() { done++; if (done >= total) { layer.close(index); layer.msg('已' + text + ' ' + total + ' 个用例', {icon:1}); loadTestcase(1); } } });
+                    } else { done++; if (done >= total) { layer.close(index); loadTestcase(1); } }
+                }});
+            });
+        });
+    }
+
+    function onTcDragStart(e, id) {
+        tcDragSrcId = id;
+        e.dataTransfer.effectAllowed = 'move';
+        e.target.closest('tr').style.opacity = '0.4';
+    }
+
+    function onTcDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        var tr = e.target.closest('tr');
+        if (tr) tr.classList.add('drag-over');
+    }
+
+    function onTcDrop(e, targetId) {
+        e.preventDefault();
+        var tr = e.target.closest('tr');
+        if (tr) tr.classList.remove('drag-over');
+        if (tcDragSrcId === targetId) return;
+        ajax({
+            url: '/api/testcase/' + tcDragSrcId, success: function(srcRes) {
+                if (srcRes.code !== 200) return;
+                ajax({
+                    url: '/api/testcase/' + targetId, success: function(tgtRes) {
+                        if (tgtRes.code !== 200) return;
+                        var srcObj = srcRes.data, tgtObj = tgtRes.data;
+                        var tmpSort = srcObj.sortOrder;
+                        srcObj.sortOrder = tgtObj.sortOrder;
+                        tgtObj.sortOrder = tmpSort;
+                        var done = 0;
+                        function checkDone() { done++; if (done >= 2) loadTestcase(1); }
+                        ajax({ url: '/api/testcase', method: 'PUT', contentType: 'application/json', data: JSON.stringify(srcObj), success: checkDone });
+                        ajax({ url: '/api/testcase', method: 'PUT', contentType: 'application/json', data: JSON.stringify(tgtObj), success: checkDone });
+                    }
+                });
+            }
+        });
+    }
+
+    function onTcDragEnd(e) {
+        tcDragSrcId = null;
+        var rows = document.querySelectorAll('#testcaseTbody tr');
+        rows.forEach(function(r) { r.style.opacity = ''; r.classList.remove('drag-over'); });
     }
 
     /** 打开用例表单弹窗 */
@@ -296,6 +473,66 @@
         var result = validateExpectedResults(rulesVal, expectedVal);
         if (result.ok) { hint.className = 'field-ok'; hint.innerHTML = '<i class="fas fa-check"></i> 格式正确'; }
         else { hint.className = 'field-error'; hint.innerHTML = '<i class="fas fa-times"></i> ' + result.msg; }
+    }
+
+    // ============================================================
+    //  虚拟滚动模式
+    // ============================================================
+    var tcVirtualScroll = null;
+    var tcAllData = [];
+
+    function toggleTcVirtualMode(enabled) {
+        var table = document.querySelector('#testcasePage').closest('.card').querySelector('table.layui-table');
+        var virtualContainer = document.getElementById('tcVirtualContainer');
+        if (enabled) {
+            table.style.display = 'none';
+            virtualContainer.style.display = '';
+            if (!tcVirtualScroll) {
+                tcVirtualScroll = new VirtualScroll('#tcVirtualContainer', {
+                    rowHeight: 44,
+                    buffer: 8,
+                    renderRow: function(item, i) {
+                        var statusHtml = item.enabled === 1
+                            ? '<span class="tag tag-success"><i class="fas fa-check-circle"></i> 启用</span>'
+                            : '<span class="tag tag-danger"><i class="fas fa-times-circle"></i> 禁用</span>';
+                        var envHtml = item.env === 'dev' ? '<span class="env-badge dev">DEV</span>'
+                            : item.env === 'uat' ? '<span class="env-badge uat">UAT</span>'
+                            : item.env === 'pro' ? '<span class="env-badge pro">PRO</span>'
+                            : '<span class="tag tag-primary">' + (item.env||'DEV') + '</span>';
+                        return '<tr data-id="' + item.id + '">' +
+                            '<td style="width:40px;"><input type="checkbox" class="tc-row-check" value="' + item.id + '"></td>' +
+                            '<td style="width:30px;"><span class="row-expand-btn" onclick="toggleTcRowExpand(this,' + item.id + ')"><i class="fas fa-chevron-right"></i></span></td>' +
+                            '<td style="width:30px;"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span></td>' +
+                            '<td style="min-width:120px;"><strong>' + escHtml(item.caseTitle) + '</strong></td>' +
+                            '<td style="width:70px;">' + envHtml + '</td>' +
+                            '<td style="width:55px;">' + (item.sortOrder||0) + '</td>' +
+                            '<td style="width:70px;">' + statusHtml + '</td>' +
+                            '<td class="ops-cell">' +
+                            '<button class="action-btn perm" onclick="runOnlineTest(' + item.id + ',\'' + escHtml(item.caseTitle).replace(/'/g,"\\'") + '\',\'' + (item.env||'dev') + '\')"><i class="fas fa-play"></i></button>' +
+                            '<button class="action-btn edit" onclick="editTestcase(' + item.id + ')"><i class="fas fa-pen"></i></button>' +
+                            '<button class="action-btn danger" onclick="deleteTestcase(' + item.id + ')"><i class="fas fa-trash"></i></button>' +
+                            '</td></tr>';
+                    }
+                });
+            }
+            loadTcAllData();
+        } else {
+            table.style.display = '';
+            virtualContainer.style.display = 'none';
+            if (tcVirtualScroll) { tcVirtualScroll.destroy(); tcVirtualScroll = null; }
+            loadTestcase(1);
+        }
+    }
+
+    function loadTcAllData() {
+        ajax({
+            url: '/api/testcase/page?pageNum=1&pageSize=9999',
+            success: function(res) {
+                if (res.code !== 200) return;
+                tcAllData = res.data.records || [];
+                if (tcVirtualScroll) tcVirtualScroll.setData(tcAllData);
+            }
+        });
     }
 </script>
 </div>

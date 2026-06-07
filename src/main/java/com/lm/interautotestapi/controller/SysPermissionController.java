@@ -6,16 +6,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lm.interautotestapi.common.Result;
 import com.lm.interautotestapi.entity.SysPermission;
 import com.lm.interautotestapi.service.SysPermissionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import javax.annotation.Resource;
 
 @RestController
 @RequestMapping("/api/permission")
+@RequiredArgsConstructor
 public class SysPermissionController {
 
-    @Resource
-    private SysPermissionService sysPermissionService;
+    private final SysPermissionService sysPermissionService;
 
     @GetMapping("/page")
     @SaCheckPermission("perm:manage")

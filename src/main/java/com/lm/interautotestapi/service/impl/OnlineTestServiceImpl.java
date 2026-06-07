@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.Method;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jayway.jsonpath.JsonPath;
 import com.lm.interautotestapi.entity.ApiInterface;
 import com.lm.interautotestapi.entity.ApiTestcase;
 import com.lm.interautotestapi.model.OnlineTestRequest;
@@ -12,22 +12,20 @@ import com.lm.interautotestapi.model.OnlineTestResponse;
 import com.lm.interautotestapi.service.ApiInterfaceService;
 import com.lm.interautotestapi.service.ApiTestcaseService;
 import com.lm.interautotestapi.service.OnlineTestService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class OnlineTestServiceImpl implements OnlineTestService {
 
-    @Resource
-    private ApiTestcaseService apiTestcaseService;
-
-    @Resource
-    private ApiInterfaceService apiInterfaceService;
+    private final ApiTestcaseService apiTestcaseService;
+    private final ApiInterfaceService apiInterfaceService;
 
     private static final int TIMEOUT_MS = 30000;
 
@@ -123,23 +121,15 @@ public class OnlineTestServiceImpl implements OnlineTestService {
                 String trimmed = rule.trim();
                 if (trimmed.isEmpty()) continue;
 
-                if (trimmed.startsWith("$.code")) {
-                    String expectedCode = trimmed.replaceAll("[^0-9]", "");
-                    String actualCode = "";
-                    if (responseBody.contains("\"code\"")) {
-                        int idx = responseBody.indexOf("\"code\"");
-                        String sub = responseBody.substring(idx);
-                        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"code\"\\s*:\\s*(\\d+)").matcher(sub);
-                        if (m.find()) actualCode = m.group(1);
-                    }
-                    boolean pass = expectedCode.equals(actualCode);
-                    result.append(trimmed).append(" → ").append(pass ? "✓ 通过" : "✗ 失败(actual=" + actualCode + ")").append("\n");
-                } else if (trimmed.contains("status==") || trimmed.contains("status ==")) {
+                if (trimmed.startsWith("status==") || trimmed.startsWith("status ==")) {
                     String expectedStatus = trimmed.replaceAll("[^0-9]", "");
                     boolean pass = expectedStatus.equals(String.valueOf(statusCode));
                     result.append(trimmed).append(" → ").append(pass ? "✓ 通过" : "✗ 失败(actual=" + statusCode + ")").append("\n");
+                } else if (trimmed.startsWith("$.")) {
+                    String assertResult = evaluateJsonPathAssert(trimmed, responseBody);
+                    result.append(assertResult).append("\n");
                 } else {
-                    if (responseBody.contains(trimmed.replace("contains(", "").replace(")", "").replace("\"", ""))) {
+                    if (responseBody.contains(trimmed.replace("contains(\"", "").replace("\")", "").replace("contains(", "").replace(")", ""))) {
                         result.append(trimmed).append(" → ✓ 通过\n");
                     } else {
                         result.append(trimmed).append(" → ✗ 未匹配\n");
@@ -150,6 +140,29 @@ public class OnlineTestServiceImpl implements OnlineTestService {
             return result.length() > 0 ? result.toString().trim() : "无断言规则";
         } catch (Exception e) {
             return "断言解析异常: " + e.getMessage();
+        }
+    }
+
+    private String evaluateJsonPathAssert(String rule, String responseBody) {
+        try {
+            String[] parts = rule.split("==", 2);
+            if (parts.length == 2) {
+                String jsonPath = parts[0].trim();
+                String expected = parts[1].trim().replaceAll("^\"|\"$", "");
+
+                Object actual = JsonPath.read(responseBody, jsonPath);
+                String actualStr = actual != null ? actual.toString() : "null";
+
+                if (expected.equals(actualStr)) {
+                    return rule + " → ✓ 通过";
+                } else {
+                    return rule + " → ✗ 失败(actual=" + actualStr + ")";
+                }
+            }
+            Object actual = JsonPath.read(responseBody, rule);
+            return rule + " → ✓ 存在(actual=" + actual + ")";
+        } catch (Exception e) {
+            return rule + " → ✗ 异常: " + e.getMessage();
         }
     }
 

@@ -224,9 +224,6 @@
         .content-area::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 
         /* ===== 页面面板 ===== */
-        .page-panel { display: none; animation: fadeIn 0.35s ease; }
-        .page-panel.active { display: block; }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
@@ -861,6 +858,308 @@
             margin-top: 3px;
             line-height: 1.4;
         }
+
+        /* ================================================================
+           侧边栏折叠
+           ================================================================ */
+        .sidebar { position: relative; }
+        .sidebar-toggle {
+            position: absolute; right: -14px; top: 50%;
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            color: var(--text-secondary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; z-index: 101;
+            transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+        }
+        .sidebar-toggle:hover { background: #667eea; color: #fff; border-color: #667eea; }
+        .sidebar.collapsed { width: 64px; }
+        .sidebar.collapsed .sidebar-logo h2,
+        .sidebar.collapsed .sidebar-logo p,
+        .sidebar.collapsed .nav-item > span:not(.nav-tooltip),
+        .sidebar.collapsed .nav-section-title { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 14px; border-left-width: 0; }
+        .sidebar.collapsed .nav-item i { margin: 0; font-size: 18px; }
+        .sidebar.collapsed .sidebar-logo .logo-icon { margin-bottom: 0; }
+        .sidebar.collapsed .sidebar-logo { padding: 18px 10px; }
+        .sidebar.collapsed .sidebar-toggle i { transform: rotate(180deg); }
+        .nav-item .nav-tooltip {
+            display: none; position: absolute; left: 70px; top: 50%;
+            transform: translateY(-50%);
+            background: var(--layer-bg); color: var(--text-primary);
+            padding: 6px 14px; border-radius: 6px; font-size: 13px;
+            white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,.3);
+            border: 1px solid var(--border-color);
+            pointer-events: none; opacity: 0;
+            transition: opacity .2s;
+            z-index: 200;
+        }
+        .sidebar.collapsed .nav-item .nav-tooltip { display: block; }
+        .sidebar.collapsed .nav-item:hover .nav-tooltip { opacity: 1; }
+
+        /* ================================================================
+           面包屑导航
+           ================================================================ */
+        .breadcrumb-bar {
+            height: 34px; display: flex; align-items: center;
+            padding: 0 28px; background: transparent;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 12px; color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .breadcrumb-bar .bc-item { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: color .2s; }
+        .breadcrumb-bar .bc-item:hover { color: var(--accent-purple); }
+        .breadcrumb-bar .bc-sep { margin: 0 6px; color: var(--text-muted); opacity: .4; }
+        .breadcrumb-bar .bc-current { color: var(--accent-purple); font-weight: 500; cursor: default; }
+        .breadcrumb-bar .bc-current:hover { color: var(--accent-purple); }
+
+        /* ================================================================
+           全局搜索
+           ================================================================ */
+        .global-search { position: relative; display: flex; align-items: center; }
+        .global-search input {
+            width: 220px; height: 34px; border-radius: 17px;
+            background: var(--input-bg); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 0 14px 0 36px;
+            font-size: 13px; outline: none;
+            transition: all 0.3s;
+        }
+        .global-search input:focus {
+            width: 300px; border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+        }
+        .global-search input::placeholder { color: var(--text-muted); }
+        .global-search .gs-icon {
+            position: absolute; left: 12px;
+            color: var(--text-muted); font-size: 13px;
+            pointer-events: none;
+        }
+        .global-search .gs-shortcut {
+            position: absolute; right: 10px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 4px; padding: 1px 6px;
+            font-size: 10px; color: var(--text-muted);
+            pointer-events: none;
+        }
+        .global-search input:focus ~ .gs-shortcut { display: none; }
+        .search-dropdown {
+            position: absolute; top: calc(100% + 8px); left: 0;
+            width: 400px; background: var(--layer-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.3);
+            max-height: 400px; overflow-y: auto;
+            display: none; z-index: 1000;
+        }
+        .search-dropdown.show { display: block; animation: fadeIn .2s ease; }
+        .search-dropdown .sd-header {
+            padding: 10px 16px; font-size: 11px; color: var(--text-muted);
+            border-bottom: 1px solid var(--border-light);
+            text-transform: uppercase; letter-spacing: .5px;
+        }
+        .search-dropdown .sd-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 16px; cursor: pointer;
+            transition: background .2s; border-bottom: 1px solid var(--border-light);
+        }
+        .search-dropdown .sd-item:last-child { border-bottom: none; }
+        .search-dropdown .sd-item:hover { background: rgba(102,126,234,.08); }
+        .search-dropdown .sd-item .sd-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0;
+        }
+        .search-dropdown .sd-item .sd-icon.iface { background: rgba(102,126,234,.15); color: #667eea; }
+        .search-dropdown .sd-item .sd-icon.tc { background: rgba(17,153,142,.15); color: #38ef7d; }
+        .search-dropdown .sd-item .sd-icon.user { background: rgba(245,87,108,.15); color: #f5576c; }
+        .search-dropdown .sd-item .sd-text { flex: 1; min-width: 0; }
+        .search-dropdown .sd-item .sd-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+        .search-dropdown .sd-item .sd-desc { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .search-dropdown .sd-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+        /* ================================================================
+           骨架屏
+           ================================================================ */
+        .skeleton-overlay {
+            position: absolute; inset: 0; z-index: 50;
+            background: var(--content-bg); padding: 22px;
+            transition: opacity .3s;
+        }
+        .skeleton-overlay.hidden { opacity: 0; pointer-events: none; }
+        .sk-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-bottom: 24px; }
+        .sk-stat {
+            height: 120px; border-radius: 16px;
+            background: linear-gradient(90deg, var(--input-bg) 25%, rgba(255,255,255,.06) 50%, var(--input-bg) 75%);
+            background-size: 200% 100%;
+            animation: skShimmer 1.5s ease-in-out infinite;
+        }
+        .sk-card {
+            background: var(--bg-card); border-radius: 14px;
+            border: 1px solid var(--border-color);
+            padding: 22px 24px; margin-bottom: 20px;
+        }
+        .sk-line {
+            height: 14px; border-radius: 7px;
+            background: linear-gradient(90deg, var(--input-bg) 25%, rgba(255,255,255,.06) 50%, var(--input-bg) 75%);
+            background-size: 200% 100%;
+            animation: skShimmer 1.5s ease-in-out infinite;
+            margin-bottom: 12px;
+        }
+        .sk-line:last-child { margin-bottom: 0; }
+        .sk-line.w60 { width: 60%; }
+        .sk-line.w80 { width: 80%; }
+        .sk-line.w40 { width: 40%; }
+        .sk-line.h20 { height: 20px; }
+        .sk-line.h28 { height: 28px; }
+        @keyframes skShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ================================================================
+           页面切换动画升级
+           ================================================================ */
+        .page-panel { display: none; }
+        .page-panel.active { display: block; animation: pageSlideIn .4s cubic-bezier(.4,0,.2,1); }
+        @keyframes pageSlideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ================================================================
+           卡片交错入场
+           ================================================================ */
+        .card-stagger { opacity: 0; transform: translateY(20px); animation: cardStaggerIn .5s ease forwards; }
+        .card-stagger:nth-child(1) { animation-delay: .05s; }
+        .card-stagger:nth-child(2) { animation-delay: .1s; }
+        .card-stagger:nth-child(3) { animation-delay: .15s; }
+        .card-stagger:nth-child(4) { animation-delay: .2s; }
+        @keyframes cardStaggerIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ================================================================
+           操作反馈动画
+           ================================================================ */
+        .toast-anim-success { animation: toastSuccess .5s ease; }
+        .toast-anim-fail { animation: toastFail .5s ease; }
+        @keyframes toastSuccess {
+            0% { transform: scale(.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes toastFail {
+            0%, 100% { transform: translateX(0); }
+            10%, 50%, 90% { transform: translateX(-4px); }
+            30%, 70% { transform: translateX(4px); }
+        }
+
+        /* ================================================================
+           鼠标跟随光效
+           ================================================================ */
+        .card-glow { position: relative; overflow: hidden; }
+        .card-glow .glow-spot {
+            position: absolute; width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(102,126,234,.12) 0%, transparent 70%);
+            border-radius: 50%; pointer-events: none;
+            transform: translate(-50%, -50%);
+            opacity: 0; transition: opacity .3s;
+            z-index: 0;
+        }
+        .card-glow:hover .glow-spot { opacity: 1; }
+
+        /* ================================================================
+           行展开详情
+           ================================================================ */
+        .row-detail-row td {
+            padding: 0 !important; border: none !important;
+            background: var(--bg-card) !important;
+        }
+        .row-detail-wrap {
+            max-height: 0; overflow: hidden;
+            transition: max-height .35s ease, padding .35s ease;
+            padding: 0 16px;
+        }
+        .row-detail-wrap.open {
+            max-height: 400px; padding: 14px 16px;
+        }
+        .row-detail-content {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px;
+            font-size: 12px;
+        }
+        .row-detail-content .rd-label { color: var(--text-muted); }
+        .row-detail-content .rd-value { color: var(--text-secondary); word-break: break-all; font-family: monospace; }
+        .row-expand-detail td {
+            padding: 0 !important; border: none !important;
+            background: var(--bg-card) !important;
+        }
+        .row-detail-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px;
+            font-size: 12px; padding: 14px 16px;
+        }
+        .rd-section { display: flex; flex-direction: column; gap: 2px; }
+        .rd-section .rd-label { color: var(--text-muted); font-size: 11px; }
+        .rd-section .rd-value { color: var(--text-secondary); word-break: break-all; }
+        .rd-urls {
+            display: flex; gap: 10px; padding: 0 16px 14px; flex-wrap: wrap;
+        }
+        .rd-url-item {
+            flex: 1; min-width: 200px; background: var(--input-bg);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            padding: 8px 12px; font-size: 12px;
+        }
+        .rd-url-item code {
+            font-family: monospace; word-break: break-all; color: var(--text-secondary); font-size: 11px;
+        }
+        .row-expand-btn {
+            cursor: pointer; transition: transform .3s;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; border-radius: 4px;
+            color: var(--text-muted); font-size: 11px;
+        }
+        .row-expand-btn:hover { background: rgba(102,126,234,.1); color: var(--accent-purple); }
+        .row-expand-btn.expanded { transform: rotate(90deg); }
+
+        /* ================================================================
+           批量选择操作
+           ================================================================ */
+        .batch-bar {
+            display: none; align-items: center; gap: 10px;
+            padding: 10px 16px; margin-bottom: 12px;
+            background: rgba(102,126,234,.08);
+            border: 1px solid rgba(102,126,234,.15);
+            border-radius: 10px; font-size: 13px;
+        }
+        .batch-bar.show { display: flex; }
+        .batch-bar .batch-count { color: var(--accent-purple); font-weight: 600; }
+        .batch-bar .layui-btn { border-radius: 6px; }
+
+        /* ================================================================
+           拖拽排序
+           ================================================================ */
+        .drag-handle {
+            cursor: grab; color: var(--text-muted);
+            font-size: 14px; padding: 0 4px;
+            transition: color .2s;
+        }
+        .drag-handle:hover { color: var(--accent-purple); }
+        .drag-handle:active { cursor: grabbing; }
+        tr.dragging { opacity: .5; background: rgba(102,126,234,.08) !important; }
+        tr.drag-over td { border-top: 2px solid var(--accent-purple) !important; }
+
+        /* ================================================================
+           虚拟滚动
+           ================================================================ */
+        .virtual-scroll-container {
+            position: relative; overflow-y: auto;
+            max-height: 600px; border: 1px solid var(--border-color);
+            border-radius: 10px; background: var(--bg-card);
+        }
+        .virtual-scroll-spacer { position: relative; }
+        .virtual-scroll-viewport {
+            position: absolute; top: 0; left: 0; right: 0;
+            transform: translateY(0);
+        }
+        .virtual-scroll-viewport table { margin: 0; }
     </style>
 </head>
 <body>
@@ -868,6 +1167,9 @@
 <div class="app-container">
     <!-- ===== 侧边栏 ===== -->
     <aside class="sidebar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开侧边栏">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <div class="sidebar-logo">
             <div class="logo-icon"><i class="fas fa-bolt"></i></div>
             <h2><i class="fas fa-cog" style="font-size:13px;color:#667eea;"></i> 接口中台</h2>
@@ -880,13 +1182,13 @@
                     <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 业务管理
                 </div>
                 <div class="nav-item" data-tab="interface" onclick="switchTab('interface')">
-                    <i class="fas fa-plug"></i><span>接口管理</span>
+                    <i class="fas fa-plug"></i><span>接口管理</span><span class="nav-tooltip">接口管理</span>
                 </div>
                 <div class="nav-item" data-tab="testcase" onclick="switchTab('testcase')">
-                    <i class="fas fa-vial"></i><span>用例管理</span>
+                    <i class="fas fa-vial"></i><span>用例管理</span><span class="nav-tooltip">用例管理</span>
                 </div>
                 <div class="nav-item" data-tab="dify" onclick="switchTab('dify')">
-                    <i class="fas fa-robot"></i><span>Dify 工作流</span>
+                    <i class="fas fa-robot"></i><span>Dify 工作流</span><span class="nav-tooltip">Dify 工作流</span>
                 </div>
             </div>
             <!-- 开放接口 -->
@@ -895,10 +1197,10 @@
                     <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 数据与分析
                 </div>
                 <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
-                    <i class="fas fa-chart-pie"></i><span>数据统计</span>
+                    <i class="fas fa-chart-pie"></i><span>数据统计</span><span class="nav-tooltip">数据统计</span>
                 </div>
                 <div class="nav-item" data-tab="open-api" onclick="switchTab('open-api')">
-                    <i class="fas fa-book-open"></i><span>Open API 文档</span>
+                    <i class="fas fa-book-open"></i><span>Open API 文档</span><span class="nav-tooltip">Open API 文档</span>
                 </div>
             </div>
             <!-- 项目文档 -->
@@ -907,10 +1209,10 @@
                     <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 项目文档
                 </div>
                 <div class="nav-item" data-tab="readme" onclick="switchTab('readme')">
-                    <i class="fas fa-file-alt"></i><span>项目文档（README）</span>
+                    <i class="fas fa-file-alt"></i><span>项目文档（README）</span><span class="nav-tooltip">项目文档</span>
                 </div>
                 <div class="nav-item" data-tab="guide" onclick="switchTab('guide')">
-                    <i class="fas fa-graduation-cap"></i><span>用例格式指引</span>
+                    <i class="fas fa-graduation-cap"></i><span>用例格式指引</span><span class="nav-tooltip">用例格式指引</span>
                 </div>
             </div>
             <!-- 系统管理 -->
@@ -919,13 +1221,13 @@
                     <i class="fas fa-circle" style="font-size:6px;margin-right:4px;vertical-align:middle;"></i> 系统管理
                 </div>
                 <div class="nav-item" data-tab="user" onclick="switchTab('user')">
-                    <i class="fas fa-users"></i><span>用户管理</span>
+                    <i class="fas fa-users"></i><span>用户管理</span><span class="nav-tooltip">用户管理</span>
                 </div>
                 <div class="nav-item" data-tab="role" onclick="switchTab('role')">
-                    <i class="fas fa-user-tag"></i><span>角色管理</span>
+                    <i class="fas fa-user-tag"></i><span>角色管理</span><span class="nav-tooltip">角色管理</span>
                 </div>
                 <div class="nav-item" data-tab="permission" onclick="switchTab('permission')">
-                    <i class="fas fa-shield-halved"></i><span>权限管理</span>
+                    <i class="fas fa-shield-halved"></i><span>权限管理</span><span class="nav-tooltip">权限管理</span>
                 </div>
             </div>
         </nav>
@@ -936,9 +1238,15 @@
         <!-- 顶部栏 -->
         <header class="topbar">
             <div class="topbar-left">
-                <span class="page-title" id="pageTitle"><i class="fas fa-plug"></i> 接口管理</span>
+                <span class="page-title" id="pageTitle"><i class="fas fa-chart-pie"></i> 数据统计</span>
             </div>
             <div class="topbar-right">
+                <div class="global-search">
+                    <i class="fas fa-search gs-icon"></i>
+                    <input type="text" id="globalSearchInput" placeholder="搜索接口、用例、用户..." autocomplete="off" oninput="onGlobalSearch(this.value)" onfocus="onGlobalSearch(this.value)" onkeydown="onSearchKeydown(event)">
+                    <span class="gs-shortcut">Ctrl+K</span>
+                    <div class="search-dropdown" id="searchDropdown"></div>
+                </div>
                 <button class="theme-toggle-btn" onclick="toggleTheme()" title="切换主题">
                     <i class="fas fa-moon moon-icon"></i>
                     <i class="fas fa-sun sun-icon"></i>
@@ -956,8 +1264,32 @@
             </div>
         </header>
 
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb-bar" id="breadcrumbBar">
+            <span class="bc-item" onclick="switchTab('dashboard')"><i class="fas fa-home" style="font-size:11px;"></i> 首页</span>
+            <span class="bc-sep"><i class="fas fa-chevron-right" style="font-size:8px;"></i></span>
+            <span class="bc-current" id="breadcrumbCurrent">数据统计</span>
+        </div>
+
         <!-- 内容区 - 使用 th:insert 加载各页面碎片 -->
-        <div class="content-area">
+        <div class="content-area" style="position:relative;">
+
+            <!-- 骨架屏 -->
+            <div class="skeleton-overlay" id="skeletonOverlay">
+                <div class="sk-grid">
+                    <div class="sk-stat"></div><div class="sk-stat"></div><div class="sk-stat"></div><div class="sk-stat"></div>
+                </div>
+                <div class="sk-card">
+                    <div class="sk-line h28 w40"></div>
+                    <div class="sk-line w80"></div>
+                    <div class="sk-line w60"></div>
+                </div>
+                <div class="sk-card">
+                    <div class="sk-line h28 w40"></div>
+                    <div class="sk-line w80"></div>
+                    <div class="sk-line w60"></div>
+                </div>
+            </div>
 
             <!-- 数据统计 -->
             <div class="page-panel active" id="panel-dashboard" th:insert="pages/dashboard :: dashboard-page"></div>
@@ -1199,10 +1531,199 @@
     }
 
     // ============================================================
-    //  页面切换
+    //  侧边栏折叠
+    // ============================================================
+    function toggleSidebar() {
+        var sidebar = document.querySelector('.sidebar');
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    }
+    (function initSidebar() {
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.querySelector('.sidebar').classList.add('collapsed');
+        }
+    })();
+
+    // ============================================================
+    //  面包屑导航
+    // ============================================================
+    var breadcrumbMap = {
+        interface: '接口管理', testcase: '用例管理', dify: 'Dify 工作流',
+        dashboard: '数据统计', user: '用户管理', role: '角色管理',
+        permission: '权限管理', 'open-api': 'Open API 文档',
+        readme: '项目文档', guide: '用例格式指引'
+    };
+    var breadcrumbSectionMap = {
+        interface: '业务管理', testcase: '业务管理', dify: '业务管理',
+        dashboard: '数据与分析', 'open-api': '数据与分析',
+        readme: '项目文档', guide: '项目文档',
+        user: '系统管理', role: '系统管理', permission: '系统管理'
+    };
+    function updateBreadcrumb(tab) {
+        var section = breadcrumbSectionMap[tab] || '';
+        var current = breadcrumbMap[tab] || tab;
+        var html = '<span class="bc-item" onclick="switchTab(\'dashboard\')"><i class="fas fa-home" style="font-size:11px;"></i> 首页</span>';
+        if (tab !== 'dashboard') {
+            html += '<span class="bc-sep"><i class="fas fa-chevron-right" style="font-size:8px;"></i></span>';
+            if (section) {
+                html += '<span class="bc-item">' + escHtml(section) + '</span>';
+                html += '<span class="bc-sep"><i class="fas fa-chevron-right" style="font-size:8px;"></i></span>';
+            }
+            html += '<span class="bc-current" id="breadcrumbCurrent">' + escHtml(current) + '</span>';
+        } else {
+            html += '<span class="bc-sep"><i class="fas fa-chevron-right" style="font-size:8px;"></i></span>';
+            html += '<span class="bc-current">数据统计</span>';
+        }
+        document.getElementById('breadcrumbBar').innerHTML = html;
+    }
+
+    // ============================================================
+    //  全局搜索
+    // ============================================================
+    var searchDebounceTimer = null;
+    function onGlobalSearch(keyword) {
+        clearTimeout(searchDebounceTimer);
+        var dropdown = document.getElementById('searchDropdown');
+        if (!keyword || !keyword.trim()) {
+            dropdown.classList.remove('show');
+            dropdown.innerHTML = '';
+            return;
+        }
+        searchDebounceTimer = setTimeout(function() {
+            var items = [];
+            var done = 0;
+            function renderResults() {
+                done++;
+                if (done < 2) return;
+                var html = '';
+                if (items.length === 0) {
+                    html = '<div class="sd-empty"><i class="fas fa-search" style="font-size:20px;display:block;margin-bottom:8px;"></i>未找到相关结果</div>';
+                } else {
+                    var ifaces = items.filter(function(x) { return x.type === 'iface'; });
+                    var tcs = items.filter(function(x) { return x.type === 'tc'; });
+                    if (ifaces.length > 0) {
+                        html += '<div class="sd-header"><i class="fas fa-plug"></i> 接口</div>';
+                        ifaces.forEach(function(item) {
+                            html += '<div class="sd-item" onclick="switchTab(\'interface\');closeSearch()"><div class="sd-icon iface"><i class="fas fa-plug"></i></div><div class="sd-text"><div class="sd-name">' + escHtml(item.name) + '</div><div class="sd-desc">' + escHtml(item.desc) + '</div></div></div>';
+                        });
+                    }
+                    if (tcs.length > 0) {
+                        html += '<div class="sd-header"><i class="fas fa-vial"></i> 用例</div>';
+                        tcs.forEach(function(item) {
+                            html += '<div class="sd-item" onclick="switchTab(\'testcase\');closeSearch()"><div class="sd-icon tc"><i class="fas fa-vial"></i></div><div class="sd-text"><div class="sd-name">' + escHtml(item.name) + '</div><div class="sd-desc">' + escHtml(item.desc) + '</div></div></div>';
+                        });
+                    }
+                }
+                dropdown.innerHTML = html;
+                dropdown.classList.add('show');
+            }
+            $.ajax({
+                url: '/api/interface/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
+                headers: { 'Authorization': token },
+                success: function(res) {
+                    if (res && res.code === 200 && res.data && res.data.records) {
+                        res.data.records.forEach(function(item) {
+                            items.push({ type: 'iface', name: item.apiName, desc: item.method + ' ' + (item.urlDev || item.urlUat || item.urlPro || ''), id: item.id });
+                        });
+                    }
+                    renderResults();
+                },
+                error: function() { renderResults(); }
+            });
+            $.ajax({
+                url: '/api/testcase/page?pageNum=1&pageSize=5&keyword=' + encodeURIComponent(keyword),
+                headers: { 'Authorization': token },
+                success: function(res) {
+                    if (res && res.code === 200 && res.data && res.data.records) {
+                        res.data.records.forEach(function(item) {
+                            items.push({ type: 'tc', name: item.caseTitle, desc: '环境: ' + (item.env || '-').toUpperCase(), id: item.id });
+                        });
+                    }
+                    renderResults();
+                },
+                error: function() { renderResults(); }
+            });
+        }, 300);
+    }
+    function closeSearch() {
+        document.getElementById('searchDropdown').classList.remove('show');
+        document.getElementById('globalSearchInput').value = '';
+        document.getElementById('globalSearchInput').blur();
+    }
+    function onSearchKeydown(e) {
+        if (e.key === 'Escape') closeSearch();
+    }
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('globalSearchInput').focus();
+        }
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.global-search')) {
+            document.getElementById('searchDropdown').classList.remove('show');
+        }
+    });
+
+    // ============================================================
+    //  骨架屏
+    // ============================================================
+    function showSkeleton() {
+        var el = document.getElementById('skeletonOverlay');
+        if (el) el.classList.remove('hidden');
+    }
+    function hideSkeleton() {
+        var el = document.getElementById('skeletonOverlay');
+        if (el) el.classList.add('hidden');
+    }
+
+    // ============================================================
+    //  卡片鼠标跟随光效
+    // ============================================================
+    document.addEventListener('mousemove', function(e) {
+        var cards = document.querySelectorAll('.card-glow');
+        cards.forEach(function(card) {
+            var rect = card.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+            var spot = card.querySelector('.glow-spot');
+            if (spot) {
+                spot.style.left = x + 'px';
+                spot.style.top = y + 'px';
+            }
+        });
+    });
+
+    // ============================================================
+    //  操作反馈动画（增强 layer.msg）
+    // ============================================================
+    var _origLayerMsg = null;
+    function enhanceLayerMsg() {
+        if (!layer || !layer.msg || _origLayerMsg) return;
+        _origLayerMsg = layer.msg;
+        layer.msg = function(content, options) {
+            var result = _origLayerMsg.call(layer, content, options);
+            if (result && typeof result === 'string') {
+                var el = document.getElementById(result);
+                if (el) {
+                    var icon = el.querySelector('.layui-layer-ico');
+                    if (icon) {
+                        var iconNum = parseInt(icon.className.match(/layui-layer-ico(\d)/) && RegExp.$1);
+                        if (iconNum === 1) el.classList.add('toast-anim-success');
+                        else if (iconNum === 2) el.classList.add('toast-anim-fail');
+                    }
+                }
+            }
+            return result;
+        };
+    }
+
+    // ============================================================
+    //  页面切换（增强版）
     // ============================================================
     function switchTab(tab) {
         currentTab = tab;
+        showSkeleton();
         // 更新侧边栏高亮
         document.querySelectorAll('.nav-item').forEach(function(el) {
             el.classList.toggle('active', el.dataset.tab === tab);
@@ -1225,17 +1746,21 @@
             guide: '<i class="fas fa-graduation-cap"></i> 用例格式指引'
         };
         document.getElementById('pageTitle').innerHTML = titles[tab] || tab;
+        updateBreadcrumb(tab);
         // 触发对应页面数据加载
         var loaders = { interface: loadInterface, testcase: loadTestcase, dify: null, dashboard: loadDashboard, user: loadUser, role: loadRole, permission: loadPermission, 'open-api': null, readme: 'readme', guide: null };
         if (loaders[tab]) {
             if (loaders[tab] === 'readme') {
-                // readme 面板切换时由 readme.html 内部脚本自动加载
                 setTimeout(function() {
                     if (typeof refreshReadme === 'function') refreshReadme();
+                    hideSkeleton();
                 }, 200);
             } else {
                 loaders[tab](1);
+                setTimeout(hideSkeleton, 400);
             }
+        } else {
+            setTimeout(hideSkeleton, 300);
         }
     }
 
@@ -1330,6 +1855,69 @@
         });
     }
 
+    // ============================================================
+    //  虚拟滚动工具
+    // ============================================================
+    var VirtualScroll = (function() {
+        function VS(container, options) {
+            this.container = typeof container === 'string' ? document.querySelector(container) : container;
+            this.rowHeight = (options && options.rowHeight) || 44;
+            this.buffer = (options && options.buffer) || 5;
+            this.renderRow = options && options.renderRow;
+            this.data = [];
+            this.spacer = null;
+            this.viewport = null;
+            this._scrollHandler = null;
+            if (this.container && this.renderRow) this._init();
+        }
+        VS.prototype._init = function() {
+            this.container.innerHTML = '';
+            this.container.classList.add('virtual-scroll-container');
+            this.spacer = document.createElement('div');
+            this.spacer.className = 'virtual-scroll-spacer';
+            this.viewport = document.createElement('div');
+            this.viewport.className = 'virtual-scroll-viewport';
+            var table = document.createElement('table');
+            table.className = 'layui-table';
+            table.setAttribute('lay-skin', 'line');
+            table.style.tableLayout = 'auto';
+            this.tbody = document.createElement('tbody');
+            table.appendChild(this.tbody);
+            this.viewport.appendChild(table);
+            this.spacer.appendChild(this.viewport);
+            this.container.appendChild(this.spacer);
+            var self = this;
+            this._scrollHandler = function() { self._onScroll(); };
+            this.container.addEventListener('scroll', this._scrollHandler);
+        };
+        VS.prototype.setData = function(data) {
+            this.data = data || [];
+            this.spacer.style.height = (this.data.length * this.rowHeight) + 'px';
+            this._renderVisible();
+        };
+        VS.prototype._onScroll = function() {
+            this._renderVisible();
+        };
+        VS.prototype._renderVisible = function() {
+            var scrollTop = this.container.scrollTop;
+            var viewHeight = this.container.clientHeight;
+            var startIdx = Math.max(0, Math.floor(scrollTop / this.rowHeight) - this.buffer);
+            var endIdx = Math.min(this.data.length, Math.ceil((scrollTop + viewHeight) / this.rowHeight) + this.buffer);
+            var html = '';
+            for (var i = startIdx; i < endIdx; i++) {
+                html += this.renderRow(this.data[i], i);
+            }
+            this.tbody.innerHTML = html;
+            this.viewport.style.transform = 'translateY(' + (startIdx * this.rowHeight) + 'px)';
+        };
+        VS.prototype.destroy = function() {
+            if (this._scrollHandler) {
+                this.container.removeEventListener('scroll', this._scrollHandler);
+            }
+        };
+        return VS;
+    })();
+
     /**
      * HTML 转义（防 XSS）
      */
@@ -1385,6 +1973,8 @@
     layui.use(['layer', 'jquery', 'laypage'], function() {
         layer = layui.layer;
         $ = layui.jquery;
+
+        enhanceLayerMsg();
 
         // 获取当前登录用户信息
         $.ajax({
